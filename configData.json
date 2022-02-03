@@ -1,0 +1,14 @@
+{
+  "moralisServerUrl": "https://dvytoli6liup.usemoralis.com:2053/server",
+  "moralisAppId": "WDodihBYm6ugXLe4fu5Ifh2mihIhK4xvS8R3874N",
+  "moralisSpeedyUrl": "https://speedy-nodes-nyc.moralis.io/8792dab6d01d1abaa3815793/polygon/mainnet",
+  "DBUsername": "Polygon-NFT-Parse",
+  "DBPassword": "PolyParser",
+  "DBClusterName": "Multi App Database Cluster",
+  "DBName": "Polygon-NFT-Data",
+  "walletPublicKey": "",
+  "walletPrivateKey": "",
+  "nftSenderContractAddress": "",
+  "sendNFTGasLimit": 0,
+  "nftSenderContractABI": []
+}
