@@ -1,4 +1,5 @@
 const runMode = "Fetch";  // Fetch or Send
+const testMode = false;
 
 // Function that can be used in future. Uncomment as per need.
 //
@@ -24,6 +25,7 @@ const Web3 = require('web3');
 
 let mongoUrl = "mongodb+srv://" + configData["DBUsername"] + ":" + configData["DBPassword"] + "@" +
     configData["DBClusterName"].replace(/[ ]+/g, "").toLowerCase() + ".zm0r5.mongodb.net/" + configData["DBName"];
+/** @type MongoClient */
 let mongoClient,
     /** @type Collection */
     userCollection;
@@ -35,17 +37,10 @@ const connectToDatabase = async () => {
 
 let sendTransactionCount = 0, consecutiveFailure = 0;
 const sendNFTToWallet = async (web3, baseTransaction, smartContract, functionName, receiver) => {
-    if (sendTransactionCount === 0) {
-        baseTransaction["gasPrice"] = await web3.eth.getGasPrice();
-        sendTransactionCount = 1;
-    } else {
-        sendTransactionCount += 1;
-        sendTransactionCount %= 10;
-    }
-
     // TODO : Update params as necessary
     baseTransaction["data"] = smartContract.methods[functionName](receiver).encodeABI();
 
+    let returnResult;
     try {
         let signedTransaction = await web3.eth.accounts.signTransaction(baseTransaction, configData["walletPrivateKey"]);
         let transactionReceipt = await web3.eth.sendSignedTransaction(signedTransaction.rawTransaction);
@@ -54,14 +49,17 @@ const sendNFTToWallet = async (web3, baseTransaction, smartContract, functionNam
         } else {
             consecutiveFailure = 0;
         }
+        returnResult = transactionReceipt.status;
     } catch (err) {
         console.log("Error when sending the NFT");
         console.log(err);
         consecutiveFailure += 1;
+        returnResult = false;
     }
     if (consecutiveFailure >= 10) {
         throw "Encountered at least 10 consecutive send NFT failures. Exiting the script";
     }
+    return returnResult;
 };
 const runSendNFTScript = async () => {
     const web3 = new Web3(configData["moralisSpeedyUrl"]);
@@ -79,10 +77,25 @@ const runSendNFTScript = async () => {
     let documentWithUnsentNFT = await userCollection.find({"hasSentNFT": {"$in": [null, false]}});
 
     while (await documentWithUnsentNFT.hasNext()) {
+        if (sendTransactionCount === 0) {
+            baseTransaction["gasPrice"] = await web3.eth.getGasPrice();
+            sendTransactionCount = 1;
+        } else {
+            sendTransactionCount += 1;
+            sendTransactionCount %= 10;
+        }
         let currentDocument = await documentWithUnsentNFT.next();
 
         // TODO : Update the function name
-        await sendNFTToWallet(web3, baseTransaction, nftSenderContract, "", currentDocument["effectiveAddress"]);
+        let success = await sendNFTToWallet(web3, {...baseTransaction}, nftSenderContract, "", currentDocument["effectiveAddress"]);
+        if (success) {
+            await userCollection.updateOne({"effectiveAddress": currentDocument["effectiveAddress"]},
+                {"$set": {"hasSentNFT": true}});
+        }
+
+        if (testMode) {
+            break;
+        }
     }
 };
 
@@ -169,6 +182,12 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
                     collectedData[effectiveAddress]["foundCount"] += 1;
                 }
             }
+            if (testMode) {
+                break;
+            }
+        }
+        if (testMode) {
+            break;
         }
     } while (cursor)
 };
@@ -192,22 +211,25 @@ const runFetchDataScript = async (startBlock, endBlock, chain = "polygon") => {
         await fetchDataFromMoralis(currentEndBlock, currentStartBlock, chain);
 
         await updateDatabase();
+        if (testMode) {
+            break;
+        }
     }
 };
 
 
 const mainFunction = async () => {
     await connectToDatabase();
-    if (runMode === "Fetch") {
-        runFetchDataScript(24452192, 24452192).then().catch((err) => {
-            console.log("Script Error\n", err);
-        });
-    } else if (runMode === "Send") {
-        runSendNFTScript().then().catch((err) => {
-            console.log("Script Error\n", err);
-        });
-    } else {
-        console.log("Invalid runMode");
+    try {
+        if (runMode === "Fetch") {
+            await runFetchDataScript(24452192, 24452192);
+        } else if (runMode === "Send") {
+            await runSendNFTScript();
+        } else {
+            console.log("Invalid runMode");
+        }
+    } catch (err) {
+        console.log("Script Error\n", err);
     }
     await mongoClient.close();
 };
