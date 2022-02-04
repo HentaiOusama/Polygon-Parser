@@ -1,4 +1,3 @@
-const runMode = "Fetch";  // Fetch or Send
 const testMode = false;
 
 // Function that can be used in future. Uncomment as per need.
@@ -17,7 +16,10 @@ const testMode = false;
 //     }));
 // };
 
-const configData = require("./configData.json");
+const configData = require('./configData.json');
+const readLine = require("readline-sync");
+const Json2csvParser = require('json2csv').Parser;
+const fs = require('fs');
 const {MongoClient, Collection} = require('mongodb');
 const Moralis = require('moralis/node');
 const Web3 = require('web3');
@@ -35,10 +37,14 @@ const connectToDatabase = async () => {
 };
 
 
-let sendTransactionCount = 0, consecutiveFailure = 0;
-const sendNFTToWallet = async (web3, baseTransaction, smartContract, functionName, receiver) => {
-    // TODO : Update params as necessary
-    baseTransaction["data"] = smartContract.methods[functionName](receiver).encodeABI();
+let currentTokenIdIndex = -1, sendTransactionCount = 0, consecutiveFailure = 0;
+const getTokenId = () => {
+    currentTokenIdIndex++;
+    return configData["transferTokenIds"][currentTokenIdIndex];
+};
+const sendNFTToWallet = async (web3, baseTransaction, smartContract, functionName, params) => {
+    let execFunction = smartContract.methods[functionName];
+    baseTransaction["data"] = (typeof params === "object") ? execFunction(...params).encodeABI() : execFunction(params).encodeABI();
 
     let returnResult;
     try {
@@ -73,9 +79,18 @@ const runSendNFTScript = async () => {
     const nftSenderContract = new web3.eth.Contract(configData["nftSenderContractABI"], configData["nftSenderContractAddress"], {
         "from": configData["walletPublicKey"]
     });
+    const contractParams = configData["sendNFTFunctionParams"];
+
+    let addressChangeIndex = -1, tokenIdChangeIndex = -1;
+    for (let index = 0; index < contractParams.length; index++) {
+        if (contractParams[index] === "#receiverAddress") {
+            addressChangeIndex = index;
+        } else if (contractParams[index] === "#tokenId") {
+            tokenIdChangeIndex = index;
+        }
+    }
 
     let documentWithUnsentNFT = await userCollection.find({"hasSentNFT": {"$in": [null, false]}});
-
     while (await documentWithUnsentNFT.hasNext()) {
         if (sendTransactionCount === 0) {
             baseTransaction["gasPrice"] = await web3.eth.getGasPrice();
@@ -86,17 +101,38 @@ const runSendNFTScript = async () => {
         }
         let currentDocument = await documentWithUnsentNFT.next();
 
-        // TODO : Update the function name
-        let success = await sendNFTToWallet(web3, {...baseTransaction}, nftSenderContract, "", currentDocument["effectiveAddress"]);
+        if (addressChangeIndex !== -1) {
+            contractParams[addressChangeIndex] = currentDocument["effectiveAddress"];
+        }
+        if (tokenIdChangeIndex !== -1) {
+            contractParams[tokenIdChangeIndex] = getTokenId();
+            if (contractParams[tokenIdChangeIndex] === undefined) {
+                throw "All Token Ids Exhausted";
+            }
+        }
+
+        let success = await sendNFTToWallet(web3, {...baseTransaction}, nftSenderContract, configData["sendNFTFunctionName"], contractParams);
+
         if (success) {
             await userCollection.updateOne({"effectiveAddress": currentDocument["effectiveAddress"]},
                 {"$set": {"hasSentNFT": true}});
         }
-
         if (testMode) {
             break;
         }
     }
+};
+
+
+const databaseToExcel = async () => {
+    let allDocuments = await userCollection.find({}).toArray();
+    const json2csvParser = new Json2csvParser({header: true});
+    const csvData = json2csvParser.parse(allDocuments);
+    fs.writeFile("./userData.csv", csvData, function (err) {
+        if (err) {
+            throw err;
+        }
+    });
 };
 
 
@@ -219,20 +255,44 @@ const runFetchDataScript = async (startBlock, endBlock, chain = "polygon") => {
 
 
 const mainFunction = async () => {
+    console.log("Connecting to the database...\n");
     await connectToDatabase();
+
     try {
-        if (runMode === "Fetch") {
-            await runFetchDataScript(24452192, 24452192);
-        } else if (runMode === "Send") {
-            await runSendNFTScript();
+        let userChoice = parseInt(
+            readLine.question("" +
+                "Menu: -\n" +
+                "1. Gather user addresses and store in database\n" +
+                "2. Store database content in excel file (.csv)\n" +
+                "3. Send NFTs to user addresses in database\n\n" +
+                "Enter choice (1, 2, or 3) : ").toString()
+        );
+
+        if (1 <= userChoice <= 3) {
+            try {
+                if (userChoice === 1) {
+                    let input = readLine.question("Enter upperBlockLimit & lowerBlockLimit (space seperated) : ").toString().split(" ");
+                    await runFetchDataScript(parseInt(input[0]), parseInt(input[1]));
+                } else if (userChoice === 2) {
+                    await databaseToExcel();
+                } else if (userChoice === 3) {
+                    await runSendNFTScript();
+                }
+            } catch (err) {
+                console.log("Script Error\n", err);
+            }
         } else {
-            console.log("Invalid runMode");
+            console.log("Invalid Input");
         }
     } catch (err) {
-        console.log("Script Error\n", err);
+        console.log("Error encounters\n", err);
     }
+
+    console.log("\nDisconnecting from database...");
     await mongoClient.close();
 };
-mainFunction().then().catch((err) => {
+mainFunction().then(() => {
+    console.log("Script Execution Successful");
+}).catch((err) => {
     console.log("Database Connection Error\n", err);
 });

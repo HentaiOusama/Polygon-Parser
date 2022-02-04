@@ -9,6 +9,13 @@
   "walletPublicKey": "",
   "walletPrivateKey": "",
   "nftSenderContractAddress": "",
-  "sendNFTGasLimit": 0,
-  "nftSenderContractABI": []
+  "nftSenderContractABI": [],
+  "sendNFTGasLimit": 250000,
+  "sendNFTFunctionName": "transferFrom",
+  "sendNFTFunctionParams": [
+    "",
+    "#receiverAddress",
+    "#tokenId"
+  ],
+  "transferTokenIds": []
 }
