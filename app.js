@@ -1,5 +1,3 @@
-const testMode = false;
-
 // Function that can be used in future. Uncomment as per need.
 //
 // const delay = (ms) => new Promise(res => setTimeout(res, ms));
@@ -17,6 +15,8 @@ const testMode = false;
 // };
 
 const configData = require('./configData.json');
+const testMode = configData["testMode"];
+
 const readLine = require("readline-sync");
 const Json2csvParser = require('json2csv').Parser;
 const fs = require('fs');

@@ -1,4 +1,5 @@
 {
+  "testMode": false,
   "moralisServerUrl": "https://dvytoli6liup.usemoralis.com:2053/server",
   "moralisAppId": "WDodihBYm6ugXLe4fu5Ifh2mihIhK4xvS8R3874N",
   "moralisSpeedyUrl": "https://speedy-nodes-nyc.moralis.io/8792dab6d01d1abaa3815793/polygon/mainnet",
@@ -9,7 +10,82 @@
   "walletPublicKey": "",
   "walletPrivateKey": "",
   "nftSenderContractAddress": "",
-  "nftSenderContractABI": [],
+  "nftSenderContractABI": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "safeTransferFrom",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_data",
+          "type": "bytes"
+        }
+      ],
+      "name": "safeTransferFrom",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "transferFrom",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
   "sendNFTGasLimit": 250000,
   "sendNFTFunctionName": "transferFrom",
   "sendNFTFunctionParams": [
