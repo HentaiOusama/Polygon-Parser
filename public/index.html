@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <title>Polygon Parser</title>
+    <link rel="stylesheet" href="./index.css">
+    <script type="text/javascript" src="./../node_modules/socket.io-client/dist/socket.io.min.js"></script>
+    <script>
+        window["socketIo"] = io;
+    </script>
+</head>
+<body>
+<div class="container">
+    <div class="blockHolder" style="height: 160px; background: bisque;">
+        <div class="messageHolder" style="height: 30px; border-bottom: 1px solid black;">
+            1. Fetch NFT users on Polygon Chain and store in database: -
+        </div>
+        <div class="subBlock" style="height: 100px;">
+            <div class="wrapper" style="height: 100px; flex: 3 0 0; border-right: 1px solid black;">
+                <div class="subElementHolder">
+                    <label for="uBL">Upper Block Limit :</label>
+                </div>
+                <div class="subElementHolder">
+                    <label for="lBL">Lower Block Limit :</label>
+                </div>
+            </div>
+            <div class="wrapper" style="height: 100px; flex: 6 0 0;">
+                <input type="number" id="uBL" placeholder="Upper Block Limit">
+                <input type="number" id="lBL" placeholder="Lower Block Limit">
+            </div>
+        </div>
+        <div class="messageHolder" style="height: 30px; border-top: 1px solid black;"></div>
+    </div>
+
+    <div style="width: 100%; height: 5vh;"></div>
+
+    <div class="blockHolder" style="height: 110px; background: cornsilk;">
+        <div class="messageHolder" style="height: 30px; border-bottom: 1px solid black;">
+            2. Store database content in excel file: -
+        </div>
+        <div class="subBlock" style="height: 50px;">
+            <div class="wrapper" style="height: 50px; flex: 3 0 0; border-right: 1px solid black;">
+                <div class="subElementHolder">
+                    <label for="oFN">Output Filename :</label>
+                </div>
+            </div>
+            <div class="wrapper" style="height: 50px; flex: 6 0 0;">
+                <input type="text" id="oFN" placeholder="Output Filename">
+            </div>
+        </div>
+        <div class="messageHolder" style="height: 30px; border-top: 1px solid black;"></div>
+    </div>
+
+    <div style="width: 100%; height: 5vh;"></div>
+
+    <div class="blockHolder" style="height: 360px; background: gold;">
+        <div class="messageHolder" style="height: 30px; border-bottom: 1px solid black;">
+            3. Send NFT to wallets in database: -
+        </div>
+        <div class="subBlock" style="height: 300px;">
+            <div class="wrapper" style="height: 300px; flex: 3 0 0; border-right: 1px solid black;">
+                <div class="subElementHolder">
+                    <label for="hWA">Wallet currently holding NFTs :</label>
+                </div>
+                <div class="subElementHolder">
+                    <label for="sWA">Wallet that will send the NFTs :</label>
+                </div>
+                <div class="subElementHolder">
+                    <label for="sPK">Private Key of sender wallet :</label>
+                </div>
+                <div class="subElementHolder">
+                    <label for="nSCA">NFT Smart Contract Address :</label>
+                </div>
+                <div class="subElementHolder">
+                    <label for="nSC_ABI">NFT Smart Contract ABI :</label>
+                </div>
+                <div class="subElementHolder">
+                    <label for="tIL">Token Ids :</label>
+                </div>
+            </div>
+            <div class="wrapper" style="height: 300px; flex: 6 0 0;">
+                <input type="text" id="hWA" placeholder="Holder Wallet Address">
+                <input type="text" id="sWA" placeholder="Sender Wallet Address">
+                <input type="text" id="sPK" placeholder="Sender Wallet Private Key">
+                <input type="text" id="nSCA" placeholder="NFT Smart Contract Address">
+                <textarea id="nSC_ABI" placeholder="NFT Smart Contract ABI" style="resize: none;"></textarea>
+                <textarea id="tIL" placeholder="Token Id List (Seperated by commas)" style="resize: none;"></textarea>
+            </div>
+        </div>
+        <div class="messageHolder" style="height: 30px; border-top: 1px solid black;"></div>
+    </div>
+
+    <div style="width: 100%; height: 5vh;"></div>
+
+    <div class="blockHolder"
+         style="height: 100px; border: none; flex-direction: column; justify-content: space-between;">
+        <div style="text-align: center;">
+            <label for="oEC">Execute Operation :&nbsp;&nbsp;&nbsp;</label>
+            <select id="oEC">
+                <option value="1" selected>1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+            </select>
+        </div>
+
+        <div class="messageHolder" style="height: 50px;">
+            <button type="submit" id="executeButton"
+                    style="height: 100%; background: aqua; border-radius: 7px; cursor: pointer; padding: 0 15px;">
+                Execute Operation
+            </button>
+        </div>
+    </div>
+
+    <div style="width: 100%; height: 5vh;"></div>
+
+    <script type="text/javascript" src="./index.js"></script>
+</div>
+</body>
+</html>
