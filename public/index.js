@@ -12,6 +12,7 @@ socketIo.on('fetchPolygonNFTUsersResult', (data) => {
         messageHolder1.innerText = "Operation completed successfully";
     } else {
         messageHolder1.innerText = JSON.stringify(data["error"]);
+        console.log(data["error"]);
     }
     isExecutingOperation = false;
     executeButton.removeAttribute("disabled");
@@ -22,6 +23,7 @@ socketIo.on('databaseToExcelResult', (data) => {
         messageHolder2.innerText = "Operation completed successfully";
     } else {
         messageHolder2.innerText = JSON.stringify(data["error"]);
+        console.log(data["error"]);
     }
     isExecutingOperation = false;
     executeButton.removeAttribute("disabled");
@@ -32,6 +34,7 @@ socketIo.on('sendNFTsToUsersResult', (data) => {
         messageHolder3.innerText = "Operation completed successfully";
     } else {
         messageHolder3.innerText = JSON.stringify(data["error"]);
+        console.log(data["error"]);
     }
     isExecutingOperation = false;
     executeButton.removeAttribute("disabled");

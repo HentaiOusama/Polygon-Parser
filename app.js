@@ -75,7 +75,7 @@ app.get('/node_modules/*.*', (req, res) => {
     }
 });
 // ---- SERVE STATIC FILES ---- //
-app.get('*.*', express.static(outputFolder, {maxAge: '1d'}));
+app.get('*.*', express.static(outputFolder, {maxAge: 60 * 60 * 1000}));
 // ---- SERVE APPLICATION PATHS ---- //
 app.all('*', function (req, res) {
     res.status(200).sendFile(`/`, {root: outputFolder});
@@ -228,12 +228,16 @@ const runFetchDataFunction = async (startBlock, endBlock, chain = "polygon") => 
 const databaseToExcel = async (outputFilename) => {
     let allDocuments = await userCollection.find({}).toArray();
     const json2csvParser = new Json2csvParser({header: true});
-    const csvData = json2csvParser.parse(allDocuments);
-    fs.writeFile("./" + outputFilename, csvData, function (err) {
-        if (err) {
-            throw err;
-        }
-    });
+    if (allDocuments.length > 0) {
+        const csvData = json2csvParser.parse(allDocuments);
+        fs.writeFile("./" + outputFilename, csvData, function (err) {
+            if (err) {
+                throw err;
+            }
+        });
+    } else {
+        throw "No users present in the database";
+    }
 };
 
 let currentTokenIdIndex = -1, sendTransactionCount = 0, consecutiveFailure = 0;
@@ -338,6 +342,7 @@ io.on('connection', (socket) => {
                 "success": true
             });
         } catch (err) {
+            console.log(err);
             socket.emit('fetchPolygonNFTUsersResult', {
                 "success": false,
                 "error": err
@@ -352,6 +357,7 @@ io.on('connection', (socket) => {
                 "success": true
             });
         } catch (err) {
+            console.log(err);
             socket.emit('databaseToExcelResult', {
                 "success": false,
                 "error": err
@@ -368,6 +374,7 @@ io.on('connection', (socket) => {
                 "success": true
             });
         } catch (err) {
+            console.log(err);
             socket.emit('sendNFTsToUsersResult', {
                 "success": false,
                 "error": err
