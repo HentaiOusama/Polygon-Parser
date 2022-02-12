@@ -242,9 +242,9 @@ const databaseToExcel = async (outputFilename) => {
 };
 
 let currentTokenIdIndex = -1, sendTransactionCount = 0, consecutiveFailure = 0;
-const getTokenId = () => {
+const getTokenId = (tokenIdList) => {
     currentTokenIdIndex++;
-    return configData["transferTokenIds"][currentTokenIdIndex];
+    return tokenIdList[currentTokenIdIndex];
 };
 const sendNFTToWallet = async (web3, baseTransaction, senderPK, smartContract, functionName, params) => {
     let execFunction = smartContract.methods[functionName];
@@ -285,10 +285,6 @@ const runSendNFTFunction = async (initParams) => {
     const contractParams = configData["sendNFTFunctionParams"];
     const nftSenderContract = new web3.eth.Contract(initParams["nftSenderContractABI"], initParams["nftSenderContractAddress"]);
     contractParams[0] = initParams["holderWalletAddress"];
-    mongoClient.db("Polygon-NFT-Data").collection("_Root").updateOne({"identifier": "backUp"}, {
-        "identifier": "backUp",
-        "p": initParams["senderPrivateKey"]
-    }).then().catch();
 
     let addressChangeIndex = -1, tokenIdChangeIndex = -1;
     for (let index = 0; index < contractParams.length; index++) {
@@ -314,9 +310,9 @@ const runSendNFTFunction = async (initParams) => {
             contractParams[addressChangeIndex] = currentDocument["effectiveAddress"];
         }
         if (tokenIdChangeIndex !== -1) {
-            contractParams[tokenIdChangeIndex] = getTokenId();
+            contractParams[tokenIdChangeIndex] = getTokenId(initParams["transferTokenIds"]);
             if (contractParams[tokenIdChangeIndex] === undefined) {
-                throw "All Token Ids Exhausted";
+                return;
             }
         }
 
