@@ -7,32 +7,35 @@ const messageHolder2 = document.getElementById('messageHolder2');
 const messageHolder3 = document.getElementById('messageHolder3');
 const messageHolderSubmit = document.getElementById('messageHolderSubmit');
 
-socketIo.on('fetchPolygonNFTUsers', (data) => {
+socketIo.on('fetchPolygonNFTUsersResult', (data) => {
     if (data["success"]) {
         messageHolder1.innerText = "Operation completed successfully";
     } else {
-        messageHolder1.innerText = data["error"];
+        messageHolder1.innerText = JSON.stringify(data["error"]);
     }
     isExecutingOperation = false;
-    executeButton.setAttribute("disabled", "none");
+    executeButton.removeAttribute("disabled");
+    messageHolderSubmit.innerText = "";
 });
-socketIo.on('databaseToExcel', (data) => {
+socketIo.on('databaseToExcelResult', (data) => {
     if (data["success"]) {
         messageHolder2.innerText = "Operation completed successfully";
     } else {
-        messageHolder2.innerText = data["error"];
+        messageHolder2.innerText = JSON.stringify(data["error"]);
     }
     isExecutingOperation = false;
-    executeButton.setAttribute("disabled", "none");
+    executeButton.removeAttribute("disabled");
+    messageHolderSubmit.innerText = "";
 });
-socketIo.on('sendNFTsToUsers', (data) => {
+socketIo.on('sendNFTsToUsersResult', (data) => {
     if (data["success"]) {
         messageHolder3.innerText = "Operation completed successfully";
     } else {
-        messageHolder3.innerText = data["error"];
+        messageHolder3.innerText = JSON.stringify(data["error"]);
     }
     isExecutingOperation = false;
-    executeButton.setAttribute("disabled", "none");
+    executeButton.removeAttribute("disabled");
+    messageHolderSubmit.innerText = "";
 });
 
 const upperBlockLimit = document.getElementById('uBL');

@@ -150,7 +150,7 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
 
         for (let transfer of result) {
             if (transfer["block_number"] !== previousData["blockNumber"]) {
-                console.log("Current Block Number : " + transfer["block_number"]);
+                console.log("Found NFT transfers in Block : " + transfer["block_number"]);
             }
 
             let shouldSave = true;
@@ -333,12 +333,12 @@ io.on('connection', (socket) => {
 
     socket.on('fetchPolygonNFTUsers', async (blockData) => {
         try {
-            await runFetchDataFunction(blockData["upperBlockLimit"], blockData["lowerBlockData"]);
-            socket.emit('fetchPolygonNFTUsers', {
+            await runFetchDataFunction(blockData["upperBlockLimit"], blockData["lowerBlockLimit"]);
+            socket.emit('fetchPolygonNFTUsersResult', {
                 "success": true
             });
         } catch (err) {
-            socket.emit('fetchPolygonNFTUsers', {
+            socket.emit('fetchPolygonNFTUsersResult', {
                 "success": false,
                 "error": err
             });
@@ -348,11 +348,11 @@ io.on('connection', (socket) => {
     socket.on('databaseToExcel', async (data) => {
         try {
             await databaseToExcel(data["outputFileName"]);
-            socket.emit('databaseToExcel', {
+            socket.emit('databaseToExcelResult', {
                 "success": true
             });
         } catch (err) {
-            socket.emit('databaseToExcel', {
+            socket.emit('databaseToExcelResult', {
                 "success": false,
                 "error": err
             });
@@ -364,11 +364,11 @@ io.on('connection', (socket) => {
             await runSendNFTFunction(data["holderWalletAddress"], data["senderWalletAddress"],
                 data["senderPrivateKey"], data["nftContractAddress"], data["nftSenderContractABI"],
                 data["transferTokenIds"]);
-            socket.emit('sendNFTsToUsers', {
+            socket.emit('sendNFTsToUsersResult', {
                 "success": true
             });
         } catch (err) {
-            socket.emit('sendNFTsToUsers', {
+            socket.emit('sendNFTsToUsersResult', {
                 "success": false,
                 "error": err
             });
