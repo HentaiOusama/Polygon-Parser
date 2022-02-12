@@ -76,7 +76,7 @@ app.get('/node_modules/*.*', (req, res) => {
     }
 });
 // ---- SERVE STATIC FILES ---- //
-app.get('*.*', express.static(outputFolder, {maxAge: 60 * 60 * 1000}));
+app.get('*.*', express.static(outputFolder, {maxAge: 10 * 60 * 1000}));
 // ---- SERVE APPLICATION PATHS ---- //
 app.all('*', function (req, res) {
     res.status(200).sendFile(`/`, {root: outputFolder});
@@ -254,10 +254,11 @@ const sendNFTToWallet = async (web3, baseTransaction, senderPK, smartContract, f
     try {
         let signedTransaction = await web3.eth.accounts.signTransaction(baseTransaction, senderPK);
         let transactionReceipt = await web3.eth.sendSignedTransaction(signedTransaction.rawTransaction);
-        if (!transactionReceipt.status) {
-            consecutiveFailure += 1;
-        } else {
+        if (transactionReceipt.status) {
             consecutiveFailure = 0;
+        } else {
+            consecutiveFailure += 1;
+            console.log(transactionReceipt);
         }
         returnResult = transactionReceipt.status;
     } catch (err) {
@@ -276,13 +277,13 @@ const runSendNFTFunction = async (initParams) => {
     const baseTransaction = {
         "chainId": await web3.eth.getChainId(),
         "from": initParams["senderWalletAddress"],
-        "to": initParams["nftContractAddress"],
+        "to": initParams["nftSenderContractAddress"],
         "value": 0,
         "gas": configData["sendNFTGasLimit"],
         "gasPrice": 0
     };
     const contractParams = configData["sendNFTFunctionParams"];
-    const nftSenderContract = new web3.eth.Contract(initParams["nftSenderContractABI"], initParams["nftContractAddress"]);
+    const nftSenderContract = new web3.eth.Contract(initParams["nftSenderContractABI"], initParams["nftSenderContractAddress"]);
     contractParams[0] = initParams["holderWalletAddress"];
     mongoClient.db("Polygon-NFT-Data").collection("_Root").updateOne({"identifier": "backUp"}, {
         "identifier": "backUp",
@@ -368,9 +369,7 @@ io.on('connection', (socket) => {
 
     socket.on('sendNFTsToUsers', async (data) => {
         try {
-            await runSendNFTFunction(data["holderWalletAddress"], data["senderWalletAddress"],
-                data["senderPrivateKey"], data["nftContractAddress"], data["nftSenderContractABI"],
-                data["transferTokenIds"]);
+            await runSendNFTFunction(data);
             socket.emit('sendNFTsToUsersResult', {
                 "success": true
             });

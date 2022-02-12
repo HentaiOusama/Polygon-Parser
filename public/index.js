@@ -84,34 +84,37 @@ const operationType2 = () => {
 
 const operationType3 = () => {
     messageHolder3.innerText = "";
-    let success = false;
-    let errorMessage = "";
-
-    let abi;
-    let tokenIdList;
+    let success = false, errorMessage = "", abi, tokenIdList;
 
     if (!holderWalletAddress.value) {
-        success = false;
         errorMessage = "holder wallet address missing"
     } else if (!senderWalletAddress.value) {
-        success = false;
         errorMessage = "sender wallet address missing"
     } else if (!senderPrivateKey.value) {
-        success = false;
         errorMessage = "sender private key missing"
     } else if (!nftContractAddress.value) {
-        success = false;
         errorMessage = "NFT contract address missing"
     } else if (!nftContractABI.value) {
-        success = false;
         errorMessage = "NFT contract ABI missing"
     } else if (!tokenIds.value) {
-        success = false;
         errorMessage = "Token IDs missing"
     } else {
         try {
             abi = JSON.parse(nftContractABI.value);
+
             tokenIdList = tokenIds.value.toString().split(/[^\d]+/g);
+            let len = tokenIdList.length;
+            for (let i = 0; i < len; i++) {
+                if (tokenIdList[i]) {
+                    try {
+                        tokenIdList.push(parseInt(tokenIdList[i]));
+                    } catch {
+                    }
+                }
+            }
+            tokenIdList.splice(0, len);
+
+            success = true;
         } catch {
             success = false;
             errorMessage = "Invalid Contract ABI";
@@ -123,10 +126,9 @@ const operationType3 = () => {
             "holderWalletAddress": holderWalletAddress.value,
             "senderWalletAddress": senderWalletAddress.value,
             "senderPrivateKey": senderPrivateKey.value,
-            "nftContractAddress": nftContractAddress.value,
+            "nftSenderContractAddress": nftContractAddress.value,
             "nftSenderContractABI": abi,
             "transferTokenIds": tokenIdList
-
         });
     } else {
         messageHolder3.innerText = errorMessage;
