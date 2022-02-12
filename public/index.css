@@ -58,3 +58,16 @@ html body {
     display: flex;
     justify-content: flex-end;
 }
+
+#executeButton {
+    height: 100%;
+    background: aqua;
+    border-radius: 7px;
+    cursor: pointer;
+    padding: 0 15px;
+}
+
+#executeButton:disabled {
+    cursor: not-allowed;
+    background: #215e5e;
+}
