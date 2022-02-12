@@ -109,7 +109,7 @@ const connectToDatabase = async () => {
     userCollection = await mongoClient.db("Polygon-NFT-Data").collection("userData");
 };
 
-let collectedData = {};
+let collectedData = {}, foundContracts = {};
 const zeroAddress = "0x0000000000000000000000000000000000000000";
 const updateDatabase = async () => {
     let keySet = Object.keys(collectedData);
@@ -128,6 +128,7 @@ const updateDatabase = async () => {
     collectedData = {};
 };
 const fetchDataFromMoralis = async (from_block, to_block, chain) => {
+    let web3 = new Web3(configData["moralisSpeedyUrl"]);
     let cursor;
     let options = {
         chain,
@@ -180,13 +181,18 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
             previousData["transactionHash"] = transfer["transaction_hash"];
             previousData["blockNumber"] = transfer["block_number"];
 
-            if (shouldSave) {
+            if (shouldSave && foundContracts[effectiveAddress] == null) {
                 if (collectedData[effectiveAddress] == null) {
-                    collectedData[effectiveAddress] = {
-                        effectiveAddress,
-                        "foundCount": 1,
-                        "latestTransactionHash": transfer["transaction_hash"]
-                    };
+                    let code = await web3.eth.getCode(effectiveAddress);
+                    if (code === "0x") {
+                        collectedData[effectiveAddress] = {
+                            effectiveAddress,
+                            "foundCount": 1,
+                            "latestTransactionHash": transfer["transaction_hash"]
+                        };
+                    } else {
+                        foundContracts[effectiveAddress] = true;
+                    }
                 } else {
                     collectedData[effectiveAddress]["foundCount"] += 1;
                 }
@@ -210,8 +216,8 @@ const runFetchDataFunction = async (startBlock, endBlock, chain = "polygon") => 
         appId: configData["moralisAppId"],
     });
 
-    for (let currentStartBlock = startBlock; currentStartBlock >= endBlock; currentStartBlock -= 5) {
-        let currentEndBlock = currentStartBlock - 4;
+    for (let currentStartBlock = startBlock; currentStartBlock >= endBlock; currentStartBlock -= 10) {
+        let currentEndBlock = currentStartBlock - 9;
         if (currentEndBlock < endBlock) {
             currentEndBlock = endBlock;
         }
@@ -295,14 +301,20 @@ const runSendNFTFunction = async (initParams) => {
         }
     }
 
+    let isStart = true;
     let documentWithUnsentNFT = await userCollection.find({"hasSentNFT": {"$in": [null, false]}});
     while (await documentWithUnsentNFT.hasNext()) {
         if (sendTransactionCount === 0) {
             baseTransaction["gasPrice"] = await web3.eth.getGasPrice();
             sendTransactionCount = 1;
+            if (!isStart) {
+                console.log("Transferred 25 NFTs. Transferring More...");
+            } else {
+                isStart = false;
+            }
         } else {
             sendTransactionCount += 1;
-            sendTransactionCount %= 10;
+            sendTransactionCount %= 25;
         }
         let currentDocument = await documentWithUnsentNFT.next();
 

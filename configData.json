@@ -8,10 +8,12 @@
   "DBClusterName": "Multi App Database Cluster",
   "DBName": "Polygon-NFT-Data",
   "sendNFTGasLimit": 250000,
-  "sendNFTFunctionName": "transferFrom",
+  "sendNFTFunctionName": "safeTransferFrom",
   "sendNFTFunctionParams": [
     "",
     "#receiverAddress",
-    "#tokenId"
+    "#tokenId",
+    1,
+    "0x00"
   ]
 }
