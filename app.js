@@ -25,6 +25,7 @@ Object.freeze(logger);
 // This practice should be avoided and be used in cases only like this.
 global["globalLoggerObject"] = logger;
 
+const open = require('open');
 const express = require('express');
 const http = require('http');
 const {Server} = require('socket.io');
@@ -393,4 +394,5 @@ connectToDatabase().then(() => {
     httpServer.listen(portNumber, () => {
         logger.info('Listening on port ' + portNumber);
     });
+    open("http://localhost:" + portNumber);
 });
