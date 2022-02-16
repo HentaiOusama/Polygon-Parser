@@ -118,15 +118,12 @@ const updateDatabase = async () => {
         let foundDoc = await userCollection.findOne({"effectiveAddress": key});
         if (foundDoc) {
             let latestBlockNumber = foundDoc["latestBlockNumber"]
-            let latestTransactionHash = foundDoc["latestTransactionHash"];
             if (latestBlockNumber < collectedData[key]["latestBlockNumber"]) {
                 latestBlockNumber = collectedData[key]["latestBlockNumber"];
-                latestTransactionHash = collectedData[key]["latestTransactionHash"];
             }
             await userCollection.updateOne(foundDoc,
                 {
                     "$set": {
-                        latestTransactionHash,
                         latestBlockNumber,
                         "foundCount": (foundDoc["foundCount"] + collectedData[key]["foundCount"])
                     }
@@ -202,7 +199,6 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
                             collectedData[effectiveAddress] = {
                                 effectiveAddress,
                                 "foundCount": 1,
-                                "latestTransactionHash": transfer["transaction_hash"],
                                 "latestBlockNumber": parseInt(transfer["block_number"])
                             };
                         } else {
@@ -318,8 +314,21 @@ const runSendNFTFunction = async (initParams) => {
     }
 
     let isStart = true;
+    let findDocument = {"hasSentNFT": {"$in": [null, false]}, "latestBlockNumber": {}};
+    let didSetBlockNumber = false;
+    if (initParams["sendUpperBlockLimit"]) {
+        findDocument["latestBlockNumber"]["$lte"] = parseInt(initParams["sendUpperBlockLimit"]);
+        didSetBlockNumber = true;
+    }
+    if (initParams["sendLowerBlockLimit"]) {
+        findDocument["latestBlockNumber"]["$gte"] = parseInt(initParams["sendLowerBlockLimit"]);
+        didSetBlockNumber = true;
+    }
+    if (!didSetBlockNumber) {
+        delete findDocument["latestBlockNumber"];
+    }
     let documentWithUnsentNFT = await userCollection
-        .find({"hasSentNFT": {"$in": [null, false]}})
+        .find(findDocument)
         .sort({"latestBlockNumber": -1})
         .allowDiskUse();
     while (await documentWithUnsentNFT.hasNext()) {

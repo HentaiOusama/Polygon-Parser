@@ -47,6 +47,8 @@ socketIo.on('alreadyExecutingOperation', () => {
 const upperBlockLimit = document.getElementById('uBL');
 const lowerBlockLimit = document.getElementById('lBL');
 const outputFilename = document.getElementById('oFN');
+const sendUpperBlockLimit = document.getElementById('sUBL');
+const sendLowerBlockLimit = document.getElementById('sLBL');
 const holderWalletAddress = document.getElementById('hWA');
 const senderWalletAddress = document.getElementById('sWA');
 const senderPrivateKey = document.getElementById('sPK');
@@ -125,14 +127,30 @@ const operationType3 = () => {
     }
 
     if (success) {
-        socketIo.emit('sendNFTsToUsers', {
+        let sendData = {
             "holderWalletAddress": holderWalletAddress.value,
             "senderWalletAddress": senderWalletAddress.value,
             "senderPrivateKey": senderPrivateKey.value,
             "nftSenderContractAddress": nftContractAddress.value,
             "nftSenderContractABI": abi,
             "transferTokenIds": tokenIdList
-        });
+        };
+
+        if (sendUpperBlockLimit.value) {
+            try {
+                sendData["sendUpperBlockLimit"] = parseInt(sendUpperBlockLimit);
+            } catch {
+            }
+        }
+
+        if (sendLowerBlockLimit.value) {
+            try {
+                sendData["sendLowerBlockLimit"] = parseInt(sendLowerBlockLimit);
+            } catch {
+            }
+        }
+
+        socketIo.emit('sendNFTsToUsers', sendData);
     } else {
         messageHolder3.innerText = errorMessage;
     }
