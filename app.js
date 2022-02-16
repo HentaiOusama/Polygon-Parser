@@ -82,10 +82,8 @@ app.all('*', function (req, res) {
     res.status(200).sendFile(`/`, {root: outputFolder});
 });
 
-// Function that can be used in future. Uncomment as per need.
-//
-// const delay = (ms) => new Promise(res => setTimeout(res, ms));
-//
+const delay = (ms) => new Promise(res => setTimeout(res, ms));
+
 // const printSaveData = (saveData) => {
 //     console.log(JSON.stringify(saveData).replaceAll(/[:,]/gi, (matched) => {
 //         switch (matched) {
@@ -109,16 +107,30 @@ const connectToDatabase = async () => {
     userCollection = await mongoClient.db("Polygon-NFT-Data").collection("userData");
 };
 
+let nextApiCallTime = 0, apiCallCount = 0;
 let collectedData = {}, foundContracts = {};
 const zeroAddress = "0x0000000000000000000000000000000000000000";
 const updateDatabase = async () => {
+    console.log("Updating Database");
     let keySet = Object.keys(collectedData);
 
     for (let key of keySet) {
         let foundDoc = await userCollection.findOne({"effectiveAddress": key});
         if (foundDoc) {
+            let latestBlockNumber = foundDoc["latestBlockNumber"]
+            let latestTransactionHash = foundDoc["latestTransactionHash"];
+            if (latestBlockNumber < collectedData[key]["latestBlockNumber"]) {
+                latestBlockNumber = collectedData[key]["latestBlockNumber"];
+                latestTransactionHash = collectedData[key]["latestTransactionHash"];
+            }
             await userCollection.updateOne(foundDoc,
-                {"$set": {"foundCount": (foundDoc["foundCount"] + collectedData[key]["foundCount"])}});
+                {
+                    "$set": {
+                        latestTransactionHash,
+                        latestBlockNumber,
+                        "foundCount": (foundDoc["foundCount"] + collectedData[key]["foundCount"])
+                    }
+                });
         } else {
             collectedData[key]["hasSentNFT"] = false;
             await userCollection.insertOne(collectedData[key]);
@@ -126,6 +138,15 @@ const updateDatabase = async () => {
     }
 
     collectedData = {};
+};
+const preAPICallCheck = async (appendMessage = "") => {
+    let currentTime = Date.now();
+    if (currentTime < nextApiCallTime) {
+        await delay(125);
+    }
+    nextApiCallTime = currentTime + 150;
+
+    console.log(`API Call ${++apiCallCount} at ${Date.now()} for ${appendMessage}`);
 };
 const fetchDataFromMoralis = async (from_block, to_block, chain) => {
     let web3 = new Web3(configData["moralisSpeedyUrl"]);
@@ -136,12 +157,13 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
         to_block
     };
     let effectiveAddress = "", operationType,
-        previousData = {"operationType": "", "transactionHash": "", blockNumber: ""};
+        previousData = {"operationType": "", "transactionHash": "", "blockNumber": ""};
 
     do {
         if (cursor) {
             options["cursor"] = cursor;
         }
+        await preAPICallCheck("getting NFT transfers");
         let nftTransfers = await Moralis.Web3API.token.getNftTransfersFromToBlock(options);
         cursor = nftTransfers["cursor"];
 
@@ -158,16 +180,7 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
             let shouldSave = true;
             if (transfer["from_address"] === zeroAddress) {
                 operationType = "Mint";
-                if (transfer["transaction_hash"] !== previousData["transactionHash"] || operationType !== previousData["operationType"]) {
-                    let transaction = await Moralis.Web3API.native.getTransaction({
-                        chain,
-                        "transaction_hash": transfer["transaction_hash"]
-                    });
-                    effectiveAddress = transaction["from_address"];
-                } else {
-                    shouldSave = false;
-                    collectedData[effectiveAddress]["foundCount"] += 1;
-                }
+                shouldSave = false;
             } else if (transfer["to_address"] === zeroAddress) {
                 effectiveAddress = transfer["from_address"];
                 operationType = "Burn"
@@ -176,25 +189,28 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
                 operationType = "Transfer"
             }
 
-            effectiveAddress = Web3.utils.toChecksumAddress(effectiveAddress);
             previousData["operationType"] = operationType;
             previousData["transactionHash"] = transfer["transaction_hash"];
             previousData["blockNumber"] = transfer["block_number"];
 
-            if (shouldSave && foundContracts[effectiveAddress] == null) {
-                if (collectedData[effectiveAddress] == null) {
-                    let code = await web3.eth.getCode(effectiveAddress);
-                    if (code === "0x") {
-                        collectedData[effectiveAddress] = {
-                            effectiveAddress,
-                            "foundCount": 1,
-                            "latestTransactionHash": transfer["transaction_hash"]
-                        };
+            if (shouldSave) {
+                effectiveAddress = Web3.utils.toChecksumAddress(effectiveAddress);
+                if (foundContracts[effectiveAddress] == null) {
+                    if (collectedData[effectiveAddress] == null) {
+                        let code = await web3.eth.getCode(effectiveAddress);
+                        if (code === "0x") {
+                            collectedData[effectiveAddress] = {
+                                effectiveAddress,
+                                "foundCount": 1,
+                                "latestTransactionHash": transfer["transaction_hash"],
+                                "latestBlockNumber": parseInt(transfer["block_number"])
+                            };
+                        } else {
+                            foundContracts[effectiveAddress] = true;
+                        }
                     } else {
-                        foundContracts[effectiveAddress] = true;
+                        collectedData[effectiveAddress]["foundCount"] += 1;
                     }
-                } else {
-                    collectedData[effectiveAddress]["foundCount"] += 1;
                 }
             }
             if (testMode) {
@@ -213,7 +229,7 @@ const runFetchDataFunction = async (startBlock, endBlock, chain = "polygon") => 
     }
     await Moralis.start({
         serverUrl: configData["moralisServerUrl"],
-        appId: configData["moralisAppId"],
+        masterKey: configData["moralisMasterKey"]
     });
 
     for (let currentStartBlock = startBlock; currentStartBlock >= endBlock; currentStartBlock -= 10) {
@@ -233,7 +249,7 @@ const runFetchDataFunction = async (startBlock, endBlock, chain = "polygon") => 
 };
 
 const databaseToExcel = async (outputFilename) => {
-    let allDocuments = await userCollection.find({}).toArray();
+    let allDocuments = await userCollection.find({}).sort({"latestBlockNumber": -1}).allowDiskUse().toArray();
     const json2csvParser = new Json2csvParser({header: true});
     if (allDocuments.length > 0) {
         const csvData = json2csvParser.parse(allDocuments);
@@ -302,7 +318,10 @@ const runSendNFTFunction = async (initParams) => {
     }
 
     let isStart = true;
-    let documentWithUnsentNFT = await userCollection.find({"hasSentNFT": {"$in": [null, false]}});
+    let documentWithUnsentNFT = await userCollection
+        .find({"hasSentNFT": {"$in": [null, false]}})
+        .sort({"latestBlockNumber": -1})
+        .allowDiskUse();
     while (await documentWithUnsentNFT.hasNext()) {
         if (sendTransactionCount === 0) {
             baseTransaction["gasPrice"] = await web3.eth.getGasPrice();
@@ -341,52 +360,71 @@ const runSendNFTFunction = async (initParams) => {
     }
 };
 
+let isExecutingOperation = false;
 
 io.on('connection', (socket) => {
     console.log(`User Connected : ${socket.id}`);
 
     socket.on('fetchPolygonNFTUsers', async (blockData) => {
-        try {
-            await runFetchDataFunction(blockData["upperBlockLimit"], blockData["lowerBlockLimit"]);
-            socket.emit('fetchPolygonNFTUsersResult', {
-                "success": true
-            });
-        } catch (err) {
-            console.log(err);
-            socket.emit('fetchPolygonNFTUsersResult', {
-                "success": false,
-                "error": err
-            });
+        if (isExecutingOperation) {
+            socket.emit('alreadyExecutingOperation');
+        } else {
+            isExecutingOperation = true;
+            try {
+                await runFetchDataFunction(blockData["upperBlockLimit"], blockData["lowerBlockLimit"]);
+                socket.emit('fetchPolygonNFTUsersResult', {
+                    "success": true
+                });
+            } catch (err) {
+                console.log(err);
+                socket.emit('fetchPolygonNFTUsersResult', {
+                    "success": false,
+                    "error": err
+                });
+            }
+            isExecutingOperation = false;
         }
     });
 
     socket.on('databaseToExcel', async (data) => {
-        try {
-            await databaseToExcel(data["outputFileName"]);
-            socket.emit('databaseToExcelResult', {
-                "success": true
-            });
-        } catch (err) {
-            console.log(err);
-            socket.emit('databaseToExcelResult', {
-                "success": false,
-                "error": err
-            });
+        if (isExecutingOperation) {
+            socket.emit('alreadyExecutingOperation');
+        } else {
+            isExecutingOperation = true;
+            try {
+                await databaseToExcel(data["outputFileName"]);
+                socket.emit('databaseToExcelResult', {
+                    "success": true
+                });
+            } catch (err) {
+                console.log(err);
+                socket.emit('databaseToExcelResult', {
+                    "success": false,
+                    "error": err
+                });
+            }
+            isExecutingOperation = false;
         }
     });
 
     socket.on('sendNFTsToUsers', async (data) => {
-        try {
-            await runSendNFTFunction(data);
-            socket.emit('sendNFTsToUsersResult', {
-                "success": true
-            });
-        } catch (err) {
-            console.log(err);
-            socket.emit('sendNFTsToUsersResult', {
-                "success": false,
-                "error": err
-            });
+        if (isExecutingOperation) {
+            socket.emit('alreadyExecutingOperation');
+        } else {
+            isExecutingOperation = true;
+            try {
+                await runSendNFTFunction(data);
+                socket.emit('sendNFTsToUsersResult', {
+                    "success": true
+                });
+            } catch (err) {
+                console.log(err);
+                socket.emit('sendNFTsToUsersResult', {
+                    "success": false,
+                    "error": err
+                });
+            }
+            isExecutingOperation = false;
         }
     });
 

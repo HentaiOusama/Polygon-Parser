@@ -1,7 +1,7 @@
 {
   "testMode": false,
   "moralisServerUrl": "https://dvytoli6liup.usemoralis.com:2053/server",
-  "moralisAppId": "WDodihBYm6ugXLe4fu5Ifh2mihIhK4xvS8R3874N",
+  "moralisMasterKey": "N27An2iAaKtXBtluGHKaGkVVqGzslyxW3JrM2LV2",
   "moralisSpeedyUrl": "https://speedy-nodes-nyc.moralis.io/8792dab6d01d1abaa3815793/polygon/mainnet",
   "DBUsername": "Polygon-NFT-Parse",
   "DBPassword": "PolyParser",

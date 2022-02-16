@@ -40,6 +40,9 @@ socketIo.on('sendNFTsToUsersResult', (data) => {
     executeButton.removeAttribute("disabled");
     messageHolderSubmit.innerText = "";
 });
+socketIo.on('alreadyExecutingOperation', () => {
+    messageHolderSubmit.innerText = "An operation is already being executed. Please wait for it to finish.";
+});
 
 const upperBlockLimit = document.getElementById('uBL');
 const lowerBlockLimit = document.getElementById('lBL');
@@ -156,14 +159,14 @@ executeButton.addEventListener('click', () => {
                 break;
         }
         if (success) {
+            isExecutingOperation = true;
             messageHolder1.innerText = "";
             messageHolder2.innerText = "";
             messageHolder3.innerText = "";
             executeButton.setAttribute("disabled", "disabled");
             messageHolderSubmit.innerText = "An operation is being executed.";
-            isExecutingOperation = true;
         }
     } else {
-        messageHolderSubmit.innerText = "An operation is already being executed. Please wait for it to finish."
+        messageHolderSubmit.innerText = "An operation is already being executed. Please wait for it to finish.";
     }
 });
