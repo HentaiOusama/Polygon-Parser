@@ -170,10 +170,6 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
         }
 
         for (let transfer of result) {
-            if (transfer["block_number"] !== previousData["blockNumber"]) {
-                console.log("Found NFT transfers in Block : " + transfer["block_number"]);
-            }
-
             let shouldSave = true;
             if (transfer["from_address"] === zeroAddress) {
                 operationType = "Mint";
@@ -188,11 +184,13 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
 
             previousData["operationType"] = operationType;
             previousData["transactionHash"] = transfer["transaction_hash"];
-            previousData["blockNumber"] = transfer["block_number"];
 
             if (shouldSave) {
                 effectiveAddress = Web3.utils.toChecksumAddress(effectiveAddress);
                 if (foundContracts[effectiveAddress] == null) {
+                    if (transfer["block_number"] !== previousData["blockNumber"]) {
+                        console.log("Found NFT transfers in Block : " + transfer["block_number"]);
+                    }
                     if (collectedData[effectiveAddress] == null) {
                         let code = await web3.eth.getCode(effectiveAddress);
                         if (code === "0x") {
@@ -209,6 +207,8 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
                     }
                 }
             }
+            previousData["blockNumber"] = transfer["block_number"];
+
             if (testMode) {
                 break;
             }
