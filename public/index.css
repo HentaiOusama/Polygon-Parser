@@ -22,14 +22,21 @@ html body {
 
 .blockHolder {
     width: 99%;
+    height: fit-content;
+
     display: flex;
     flex-direction: column;
     border: 2px solid black;
     justify-content: space-around;
+
+    border-radius: 15px;
+    box-shadow: #3d3b3b 0 0 10px 5px;
 }
 
 .subBlock {
     width: 100%;
+    height: fit-content;
+
     display: flex;
 }
 
@@ -44,7 +51,9 @@ html body {
 
 .messageHolder {
     width: 100%;
-    height: 30px;
+    height: 50px;
+
+    font-size: 25px;
 
     display: flex;
     justify-content: center;
@@ -52,20 +61,62 @@ html body {
     text-align: center;
 }
 
-.subElementHolder {
+.subElementHolderLeft {
     width: 100%;
-    height: 25px;
+    height: 45px;
 
     display: flex;
     justify-content: flex-end;
+    text-align: right;
+    align-items: center;
+}
+
+.subElementHolderRight {
+    width: 100%;
+    height: 45px;
+
+    display: flex;
+    justify-content: center;
+    text-align: center;
+    align-items: center;
+}
+
+input {
+    width: 95%;
+    height: 60%;
+    border-radius: 7px;
+    border: 1px solid black;
+}
+
+input:active, :focus {
+    outline: none;
+}
+
+textarea {
+    width: 95%;
+    height: 85%;
+
+    border-radius: 7px;
+    border: 1px solid black;
+}
+
+textarea:active, :focus {
+    outline: none;
 }
 
 #executeButton {
     height: 100%;
     background: aqua;
+
+    border: none;
+    outline: none;
     border-radius: 7px;
+    box-shadow: #3d3b3b 0 0 10px 5px;
+
     cursor: pointer;
-    padding: 0 15px;
+    padding: 0 20px;
+
+    font-size: 30px;
 }
 
 #executeButton:disabled {
