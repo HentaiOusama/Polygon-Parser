@@ -111,37 +111,32 @@ let nextApiCallTime = 0, apiCallCount = 0;
 let collectedData = {}, foundContracts = {};
 const zeroAddress = "0x0000000000000000000000000000000000000000";
 const updateDatabase = async () => {
-    console.log("Updating Database");
+    let updateStartTime = Date.now();
+
     let keySet = Object.keys(collectedData);
-
     for (let key of keySet) {
-        let foundDoc = await userCollection.findOne({"effectiveAddress": key});
-        if (foundDoc) {
-            let latestBlockNumber = foundDoc["latestBlockNumber"]
-            if (latestBlockNumber < collectedData[key]["latestBlockNumber"]) {
-                latestBlockNumber = collectedData[key]["latestBlockNumber"];
-            }
-            await userCollection.updateOne(foundDoc,
-                {
-                    "$set": {
-                        latestBlockNumber,
-                        "foundCount": (foundDoc["foundCount"] + collectedData[key]["foundCount"])
-                    }
-                });
-        } else {
-            collectedData[key]["hasSentNFT"] = false;
-            await userCollection.insertOne(collectedData[key]);
-        }
+        await userCollection.updateOne({"effectiveAddress": key},
+            {
+                "$setOnInsert": {
+                    "effectiveAddress": key,
+                    "hasSentNFT": false
+                },
+                "$max": {"latestBlockNumber": collectedData[key]["latestBlockNumber"]},
+                "$inc": {"foundCount": collectedData[key]["foundCount"]}
+            },
+            {upsert: true});
     }
-
     collectedData = {};
+
+    let updateEndTime = Date.now();
+    console.log("Updated Database in " + (updateEndTime - updateStartTime) + " ms");
 };
 const preAPICallCheck = async (appendMessage = "") => {
     let currentTime = Date.now();
     if (currentTime < nextApiCallTime) {
-        await delay(125);
+        await delay(700);
     }
-    nextApiCallTime = currentTime + 150;
+    nextApiCallTime = currentTime + 750;
 
     console.log(`API Call ${++apiCallCount} at ${Date.now()} for ${appendMessage}`);
 };
@@ -160,15 +155,21 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
         if (cursor) {
             options["cursor"] = cursor;
         }
+
+        let callStartTime = Date.now();
         await preAPICallCheck("getting NFT transfers");
         let nftTransfers = await Moralis.Web3API.token.getNftTransfersFromToBlock(options);
         cursor = nftTransfers["cursor"];
-
         let result = nftTransfers["result"];
-        if (result.length === 0) {
+
+        let resultCount = result.length;
+        if (resultCount === 0 || (nftTransfers["page_size"] * (nftTransfers["page"] + 1)) >= nftTransfers["total"]) {
             break;
+        } else {
+            console.log(`Received Response from Moralis in ${Date.now() - callStartTime} ms containing ${resultCount} transfers`);
         }
 
+        let startTime = Date.now();
         for (let transfer of result) {
             let shouldSave = true;
             if (transfer["from_address"] === zeroAddress) {
@@ -213,6 +214,7 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
                 break;
             }
         }
+        console.log(`Processed all transfers in ${Date.now() - startTime} ms`);
         if (testMode) {
             break;
         }
@@ -233,6 +235,7 @@ const runFetchDataFunction = async (startBlock, endBlock, chain = "polygon") => 
         if (currentEndBlock < endBlock) {
             currentEndBlock = endBlock;
         }
+        console.log("\n\nFor Loop --> " + currentStartBlock + ", " + currentEndBlock);
 
         /* The results returned by moralis are from higher block number to smaller block number */
         await fetchDataFromMoralis(currentEndBlock, currentStartBlock, chain);
