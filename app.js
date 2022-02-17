@@ -109,7 +109,7 @@ const connectToDatabase = async () => {
 };
 
 let nextApiCallTime = 0, apiCallCount = 0;
-let collectedData = {}, foundContracts = {};
+let collectedData = {}, foundContracts = {}, lastCheckedBlock;
 const zeroAddress = "0x0000000000000000000000000000000000000000";
 const updateDatabase = async () => {
     let updateStartTime = Date.now();
@@ -198,6 +198,7 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
                     }
                     if (collectedData[effectiveAddress] == null) {
                         let code = await web3.eth.getCode(effectiveAddress);
+                        await delay(25);
                         if (code === "0x") {
                             collectedData[effectiveAddress] = {
                                 effectiveAddress,
@@ -213,6 +214,7 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
                 }
             }
             previousData["blockNumber"] = transfer["block_number"];
+            lastCheckedBlock = previousData["blockNumber"];
 
             if (testMode) {
                 break;
@@ -234,17 +236,33 @@ const runFetchDataFunction = async (startBlock, endBlock, chain = "polygon") => 
         apiKey: configData["moralisApiKey"]
     });
 
+    lastCheckedBlock = startBlock.toString();
     for (let currentStartBlock = startBlock; currentStartBlock >= endBlock; currentStartBlock -= 10) {
         let currentEndBlock = currentStartBlock - 9;
         if (currentEndBlock < endBlock) {
             currentEndBlock = endBlock;
         }
         console.log("\n\nFor Loop --> " + currentStartBlock + ", " + currentEndBlock);
+        let consecutiveErrors = 0;
 
         /* The results returned by moralis are from higher block number to smaller block number */
-        await fetchDataFromMoralis(currentEndBlock, currentStartBlock, chain);
+        try {
+            await fetchDataFromMoralis(currentEndBlock, currentStartBlock, chain);
+            await updateDatabase();
+            consecutiveErrors = 0;
+        } catch (err) {
+            console.log("Error Response from Moralis. Waiting 30 seconds before continuing.");
+            await delay(30000);
+            currentStartBlock = parseInt(lastCheckedBlock) + 10;
+            consecutiveErrors += 1;
 
-        await updateDatabase();
+            if (consecutiveErrors === 10) {
+                console.log("Encountered 10 Consecutive Errors... Exiting Script.");
+                console.log(err);
+                return;
+            }
+        }
+
         if (testMode) {
             break;
         }
