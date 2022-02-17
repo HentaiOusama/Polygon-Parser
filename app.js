@@ -48,19 +48,20 @@ const outputFolder = __dirname + "/public";
 
 // Shutdown Handler
 const shutdownHandler = (event) => {
-    logger.info("Shutdown Handler Start for " + event);
-    mongoClient.close().then().catch(() => {
+    logger.info(`Script Exit command ${event} received. Gracefully closing pending tasks. Please wait...`);
+    mongoClient.close().then(() => {
+        console.log("Script successfully exited...");
+        process.exit();
+    }).catch(() => {
         console.log("Error when closing DB connection.");
+        process.exit();
     });
 
     setTimeout(() => {
-        logger.info("Shutdown Handler End");
+        logger.info("Shutdown Handler Time Limit Reached");
         process.exit(1);
     }, 25000);
 };
-if (process.stdin.isTTY && !process.stdin.isRaw) {
-    process.stdin.setRawMode(true);
-}
 process.on("SIGINT", shutdownHandler);
 process.on("SIGTERM", shutdownHandler);
 process.stdin.resume();
@@ -134,9 +135,9 @@ const updateDatabase = async () => {
 const preAPICallCheck = async (appendMessage = "") => {
     let currentTime = Date.now();
     if (currentTime < nextApiCallTime) {
-        await delay(700);
+        await delay(975);
     }
-    nextApiCallTime = currentTime + 750;
+    nextApiCallTime = currentTime + 1000;
 
     console.log(`API Call ${++apiCallCount} at ${Date.now()} for ${appendMessage}`);
 };
@@ -163,10 +164,13 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
         let result = nftTransfers["result"];
 
         let resultCount = result.length;
-        if (resultCount === 0 || (nftTransfers["page_size"] * (nftTransfers["page"] + 1)) >= nftTransfers["total"]) {
+        if ((nftTransfers["page_size"] * (nftTransfers["page"] + 1)) >= nftTransfers["total"]) {
             break;
         } else {
             console.log(`Received Response from Moralis in ${Date.now() - callStartTime} ms containing ${resultCount} transfers`);
+            if (resultCount === 0) {
+                break;
+            }
         }
 
         let startTime = Date.now();
@@ -225,9 +229,9 @@ const runFetchDataFunction = async (startBlock, endBlock, chain = "polygon") => 
     if (startBlock < endBlock) {
         throw "endBlock cannot be less than the startBlock";
     }
-    await Moralis.start({
+    Moralis.Web3API.initialize({
         serverUrl: configData["moralisServerUrl"],
-        masterKey: configData["moralisMasterKey"]
+        apiKey: configData["moralisApiKey"]
     });
 
     for (let currentStartBlock = startBlock; currentStartBlock >= endBlock; currentStartBlock -= 10) {
@@ -373,10 +377,7 @@ const runSendNFTFunction = async (initParams) => {
 };
 
 let isExecutingOperation = false;
-
 io.on('connection', (socket) => {
-    console.log(`User Connected : ${socket.id}`);
-
     socket.on('fetchPolygonNFTUsers', async (blockData) => {
         if (isExecutingOperation) {
             socket.emit('alreadyExecutingOperation');
@@ -438,10 +439,6 @@ io.on('connection', (socket) => {
             }
             isExecutingOperation = false;
         }
-    });
-
-    socket.on('disconnect', () => {
-        console.log("User Disconnected : " + socket.id);
     });
 });
 
