@@ -139,7 +139,8 @@ const updateDatabase = async () => {
             {
                 "$setOnInsert": {
                     "effectiveAddress": key,
-                    "hasSentNFT": false
+                    "hasSentNFT": false,
+                    "hasSentERC20": false
                 },
                 "$max": {"latestBlockNumber": collectedData[key]["latestBlockNumber"]},
                 "$inc": {"foundCount": collectedData[key]["foundCount"]}
@@ -347,8 +348,8 @@ const runSendNFTFunction = async (initParams) => {
     };
     const contractParams = configData["sendNFTFunctionParams"];
     const nftSenderContract = new web3.eth.Contract(initParams["nftSenderContractABI"], initParams["nftSenderContractAddress"]);
-    contractParams[0] = initParams["holderWalletAddress"];
 
+    contractParams[0] = initParams["holderWalletAddress"];
     let addressChangeIndex = -1, tokenIdChangeIndex = -1;
     for (let index = 0; index < contractParams.length; index++) {
         if (contractParams[index] === "#receiverAddress") {
@@ -422,6 +423,90 @@ const runSendNFTFunction = async (initParams) => {
     }
 };
 
+const maxAddressPerERC20Send = configData["maxAddressPerERC20Send"];
+const runSendERC20Function = async (initParams) => {
+    const baseTransaction = {
+        "chainId": await web3.eth.getChainId(),
+        "from": initParams["senderWalletAddress"],
+        "to": configData["sendERC20ContractAddress"],
+        "value": 0,
+        "gas": configData["sendERC20GasLimit"],
+        "gasPrice": 0
+    };
+    const erc20SenderContract = new web3.eth.Contract(configData["sendERC20ContractABI"], configData["sendERC20ContractAddress"]);
+
+    let isStart = true;
+    let findDocument = {"hasSentERC20": {"$in": [null, false]}, "latestBlockNumber": {}};
+    let didSetERC20BlockNumber = false;
+    if (initParams["sendUpperBlockLimit"]) {
+        findDocument["latestBlockNumber"]["$lte"] = parseInt(initParams["sendUpperBlockLimit"]);
+        didSetERC20BlockNumber = true;
+    }
+    if (initParams["sendLowerBlockLimit"]) {
+        findDocument["latestBlockNumber"]["$gte"] = parseInt(initParams["sendLowerBlockLimit"]);
+        didSetERC20BlockNumber = true;
+    }
+    if (!didSetERC20BlockNumber) {
+        delete findDocument["latestBlockNumber"];
+    }
+
+    let documentWithUnsentERC20,
+        customAddressMode = initParams["useCustomAddressList"] && initParams["customAddressList"];
+    if (customAddressMode) {
+        documentWithUnsentERC20 = buildCursorFromList(initParams["customAddressList"]);
+    } else {
+        documentWithUnsentERC20 = await userCollection
+            .find(findDocument)
+            .sort({"latestBlockNumber": -1})
+            .allowDiskUse();
+    }
+
+    let recipientAddresses = [];
+    while (true) {
+        if (sendTransactionCount === 0) {
+            baseTransaction["gasPrice"] = await web3.eth.getGasPrice();
+            sendTransactionCount = 1;
+            if (!isStart) {
+                console.log("Executed 5 transactions...");
+            } else {
+                isStart = false;
+            }
+        } else {
+            sendTransactionCount += 1;
+            sendTransactionCount %= 5;
+        }
+        if (await documentWithUnsentERC20.hasNext()) {
+            if (recipientAddresses.length < maxAddressPerERC20Send) {
+                let currentDocument = await documentWithUnsentERC20.next();
+                if (customAddressMode) {
+                    recipientAddresses.push(currentDocument);
+                } else {
+                    recipientAddresses.push(currentDocument["effectiveAddress"]);
+                }
+                continue;
+            }
+        } else if (recipientAddresses.length === 0) {
+            break;
+        }
+
+        let contractParams = [
+            initParams["erc20TokenAddress"], recipientAddresses, Array(recipientAddresses.length).fill(initParams["transferAmount"])
+        ];
+        let success = await sendTransactionToBlockchain({...baseTransaction}, initParams["senderPrivateKey"],
+            erc20SenderContract, configData["sendERC20FunctionName"], contractParams, "ERC20", 3);
+
+        if (success && !customAddressMode) {
+            for (let address of recipientAddresses) {
+                await userCollection.updateOne({"effectiveAddress": address}, {"$set": {"hasSentERC20": true}});
+            }
+        }
+        if (testMode) {
+            break;
+        }
+        recipientAddresses = [];
+    }
+};
+
 let isExecutingOperation = false;
 io.on('connection', (socket) => {
     socket.on('fetchPolygonNFTUsers', async (blockData) => {
@@ -487,6 +572,28 @@ io.on('connection', (socket) => {
         }
         sendTransactionCount = 0;
         currentTokenIdIndex = -1;
+    });
+
+    socket.on('sendERC20ToUsers', async (data) => {
+        if (isExecutingOperation) {
+            socket.emit('alreadyExecutingOperation');
+        } else {
+            isExecutingOperation = true;
+            try {
+                await runSendERC20Function(data);
+                socket.emit('sendERC20ToUsersResult', {
+                    "success": true
+                });
+            } catch (err) {
+                console.log(err);
+                socket.emit('sendERC20ToUsersResult', {
+                    "success": false,
+                    "error": err
+                });
+            }
+            isExecutingOperation = false;
+        }
+        sendTransactionCount = 0;
     });
 });
 
