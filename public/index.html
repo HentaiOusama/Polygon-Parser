@@ -64,7 +64,7 @@
             3. Send NFT to wallets in database: -
         </div>
         <div class="subBlock">
-            <div class="wrapper" style="height: 450px; flex: 4 0 0; border-right: 1px solid black;">
+            <div class="wrapper" style="height: 500px; flex: 4 0 0; border-right: 1px solid black;">
                 <div class="subElementHolderLeft">
                     <label for="sUBL">Upper Block Limit :</label>
                 </div>
@@ -89,8 +89,14 @@
                 <div class="subElementHolderLeft">
                     <label for="tIL">Token Ids :</label>
                 </div>
+                <div class="subElementHolderLeft">
+                    <label>Use Custom Address List :</label>
+                </div>
+                <div class="subElementHolderLeft">
+                    <label for="cAL">Custom Address List :</label>
+                </div>
             </div>
-            <div class="wrapper" style="height: 450px; flex: 6 0 0;">
+            <div class="wrapper" style="height: 500px; flex: 6 0 0;">
                 <div class="subElementHolderRight">
                     <input type="number" id="sUBL" placeholder="Upper Block Limit of Users (optional)">
                 </div>
@@ -116,6 +122,19 @@
                     <textarea id="tIL" placeholder="Token Id List (Seperated by commas)"
                               style="resize: none;"></textarea>
                 </div>
+                <div class="subElementHolderRight">
+                    <div class="subElementHolderRight" style="width: 20%; height: 100%;">
+                        <input type="radio" id="uCALYes" name="uCAL" value="1">
+                        <label for="uCALYes">Yes</label>
+                        <input type="radio" id="uCALNo" name="uCAL" value="0" checked>
+                        <label for="uCALNo">No</label>
+                    </div>
+                    <div style="height: 100%; width: 75%;"></div>
+                </div>
+                <div class="subElementHolderRight">
+                    <textarea id="cAL" placeholder="Receiver Address List (Seperated by commas)"
+                              style="resize: none;"></textarea>
+                </div>
             </div>
         </div>
         <div class="messageHolder" style="border-top: 1px solid black;">
@@ -133,7 +152,7 @@
          style="height: 200px; border: none; flex-direction: column; justify-content: space-between; box-shadow: none;">
         <div style="text-align: center; font-size: 35px;">
             <label for="oEC">Execute Operation :&nbsp;&nbsp;&nbsp;</label>
-            <select id="oEC" style="width: 75px; height: 40px; font-size: 35px;">
+            <select id="oEC" style="width: 75px; height: 37px; font-size: 30px;">
                 <option value="1" selected>1</option>
                 <option value="2">2</option>
                 <option value="3">3</option>

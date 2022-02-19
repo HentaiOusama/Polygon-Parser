@@ -84,6 +84,24 @@ app.all('*', function (req, res) {
 });
 
 const delay = (ms) => new Promise(res => setTimeout(res, ms));
+const buildCursorFromList = (sourceList) => {
+    const items = sourceList;
+    let index = 0;
+
+    return {
+        "next": async () => {
+            if (await this.hasNext()) {
+                return items[index++];
+            } else {
+                return null;
+            }
+        },
+
+        "hasNext": async () => {
+            return index < items.length;
+        }
+    };
+};
 
 // const printSaveData = (saveData) => {
 //     console.log(JSON.stringify(saveData).replaceAll(/[:,]/gi, (matched) => {
@@ -352,10 +370,18 @@ const runSendNFTFunction = async (initParams) => {
     if (!didSetBlockNumber) {
         delete findDocument["latestBlockNumber"];
     }
-    let documentWithUnsentNFT = await userCollection
-        .find(findDocument)
-        .sort({"latestBlockNumber": -1})
-        .allowDiskUse();
+
+    let documentWithUnsentNFT,
+        customAddressMode = initParams["useCustomAddressList"] && initParams["customAddressList"];
+    if (customAddressMode) {
+        documentWithUnsentNFT = buildCursorFromList(initParams["customAddressList"]);
+    } else {
+        documentWithUnsentNFT = await userCollection
+            .find(findDocument)
+            .sort({"latestBlockNumber": -1})
+            .allowDiskUse();
+    }
+
     while (await documentWithUnsentNFT.hasNext()) {
         if (sendTransactionCount === 0) {
             baseTransaction["gasPrice"] = await web3.eth.getGasPrice();
@@ -372,7 +398,7 @@ const runSendNFTFunction = async (initParams) => {
         let currentDocument = await documentWithUnsentNFT.next();
 
         if (addressChangeIndex !== -1) {
-            contractParams[addressChangeIndex] = currentDocument["effectiveAddress"];
+            contractParams[addressChangeIndex] = customAddressMode ? currentDocument : currentDocument["effectiveAddress"];
         }
         if (tokenIdChangeIndex !== -1) {
             contractParams[tokenIdChangeIndex] = getTokenId(initParams["transferTokenIds"]);
@@ -384,7 +410,7 @@ const runSendNFTFunction = async (initParams) => {
         let success = await sendNFTToWallet(web3, {...baseTransaction}, initParams["senderPrivateKey"],
             nftSenderContract, configData["sendNFTFunctionName"], contractParams);
 
-        if (success) {
+        if (success && !customAddressMode) {
             await userCollection.updateOne({"effectiveAddress": currentDocument["effectiveAddress"]},
                 {"$set": {"hasSentNFT": true}});
         }

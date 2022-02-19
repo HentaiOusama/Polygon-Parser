@@ -55,6 +55,7 @@ const senderPrivateKey = document.getElementById('sPK');
 const nftContractAddress = document.getElementById('nSCA');
 const nftContractABI = document.getElementById('nSC_ABI');
 const tokenIds = document.getElementById('tIL');
+const customAddresses = document.getElementById('cAL');
 
 const operationType1 = () => {
     messageHolder1.innerText = "";
@@ -142,12 +143,23 @@ const operationType3 = () => {
             } catch {
             }
         }
-
         if (sendLowerBlockLimit.value) {
             try {
                 sendData["sendLowerBlockLimit"] = parseInt(sendLowerBlockLimit);
             } catch {
             }
+        }
+        if (document.querySelector('input[name="uCAL"]:checked').value === '1') {
+            let customAddressList = customAddresses.value.toString().split(/[^\dA-Fa-fx]+/g);
+            let len = customAddressList.length;
+            for (let i = 0; i < len; i++) {
+                if (customAddressList[i]) {
+                    customAddressList.push(customAddressList[i]);
+                }
+            }
+            customAddressList.splice(0, len);
+            sendData["customAddressList"] = customAddressList;
+            sendData["useCustomAddressList"] = true;
         }
 
         socketIo.emit('sendNFTsToUsers', sendData);
