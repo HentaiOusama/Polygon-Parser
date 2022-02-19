@@ -5,6 +5,7 @@ let isExecutingOperation = false;
 const messageHolder1 = document.getElementById('messageHolder1');
 const messageHolder2 = document.getElementById('messageHolder2');
 const messageHolder3 = document.getElementById('messageHolder3');
+const messageHolder4 = document.getElementById('messageHolder4');
 const messageHolderSubmit = document.getElementById('messageHolderSubmit');
 
 socketIo.on('fetchPolygonNFTUsersResult', (data) => {
@@ -40,13 +41,26 @@ socketIo.on('sendNFTsToUsersResult', (data) => {
     executeButton.removeAttribute("disabled");
     messageHolderSubmit.innerText = "";
 });
+socketIo.on('sendERC20ToUsersResult', (data) => {
+    if (data["success"]) {
+        messageHolder4.innerText = "Operation completed successfully";
+    } else {
+        messageHolder4.innerText = JSON.stringify(data["error"]);
+        console.log(data["error"]);
+    }
+    isExecutingOperation = false;
+    executeButton.removeAttribute("disabled");
+    messageHolderSubmit.innerText = "";
+});
 socketIo.on('alreadyExecutingOperation', () => {
     messageHolderSubmit.innerText = "An operation is already being executed. Please wait for it to finish.";
 });
 
 const upperBlockLimit = document.getElementById('uBL');
 const lowerBlockLimit = document.getElementById('lBL');
+
 const outputFilename = document.getElementById('oFN');
+
 const sendUpperBlockLimit = document.getElementById('sUBL');
 const sendLowerBlockLimit = document.getElementById('sLBL');
 const holderWalletAddress = document.getElementById('hWA');
@@ -56,6 +70,15 @@ const nftContractAddress = document.getElementById('nSCA');
 const nftContractABI = document.getElementById('nSC_ABI');
 const tokenIds = document.getElementById('tIL');
 const customAddresses = document.getElementById('cAL');
+
+const erc20SendUpperBlockLimit = document.getElementById('eSUBL');
+const erc20SendLowerBlockLimit = document.getElementById('eSLBL');
+const erc20SenderWalletAddress = document.getElementById('eSWA');
+const erc20SenderPrivateKey = document.getElementById('eSPK');
+const erc20ContractAddress = document.getElementById('eSCA');
+const erc20SendAmount = document.getElementById('eRA');
+const erc20TokenDecimals = document.getElementById('eSCD');
+const erc20CustomAddresses = document.getElementById('eCAL');
 
 const operationType1 = () => {
     messageHolder1.innerText = "";
@@ -88,22 +111,34 @@ const operationType2 = () => {
     return true;
 };
 
+const buildCustomAddressesList = (sendData, customAddressList) => {
+    let len = customAddressList.length;
+    for (let i = 0; i < len; i++) {
+        if (customAddressList[i]) {
+            customAddressList.push(customAddressList[i]);
+        }
+    }
+    customAddressList.splice(0, len);
+    sendData["customAddressList"] = customAddressList;
+    sendData["useCustomAddressList"] = true;
+};
+
 const operationType3 = () => {
     messageHolder3.innerText = "";
     let success = false, errorMessage = "", abi, tokenIdList;
 
     if (!holderWalletAddress.value) {
-        errorMessage = "holder wallet address missing"
+        errorMessage = "holder wallet address missing";
     } else if (!senderWalletAddress.value) {
-        errorMessage = "sender wallet address missing"
+        errorMessage = "sender wallet address missing";
     } else if (!senderPrivateKey.value) {
-        errorMessage = "sender private key missing"
+        errorMessage = "sender private key missing";
     } else if (!nftContractAddress.value) {
-        errorMessage = "NFT contract address missing"
+        errorMessage = "NFT contract address missing";
     } else if (!nftContractABI.value) {
-        errorMessage = "NFT contract ABI missing"
+        errorMessage = "NFT contract ABI missing";
     } else if (!tokenIds.value) {
-        errorMessage = "Token IDs missing"
+        errorMessage = "Token IDs missing";
     } else {
         try {
             abi = JSON.parse(nftContractABI.value);
@@ -139,32 +174,74 @@ const operationType3 = () => {
 
         if (sendUpperBlockLimit.value) {
             try {
-                sendData["sendUpperBlockLimit"] = parseInt(sendUpperBlockLimit);
+                sendData["sendUpperBlockLimit"] = parseInt(sendUpperBlockLimit.value);
             } catch {
             }
         }
         if (sendLowerBlockLimit.value) {
             try {
-                sendData["sendLowerBlockLimit"] = parseInt(sendLowerBlockLimit);
+                sendData["sendLowerBlockLimit"] = parseInt(sendLowerBlockLimit.value);
             } catch {
             }
         }
         if (document.querySelector('input[name="uCAL"]:checked').value === '1') {
-            let customAddressList = customAddresses.value.toString().split(/[^\dA-Fa-fx]+/g);
-            let len = customAddressList.length;
-            for (let i = 0; i < len; i++) {
-                if (customAddressList[i]) {
-                    customAddressList.push(customAddressList[i]);
-                }
-            }
-            customAddressList.splice(0, len);
-            sendData["customAddressList"] = customAddressList;
-            sendData["useCustomAddressList"] = true;
+            buildCustomAddressesList(sendData, customAddresses.value.toString().split(/[^\dA-Fa-fx]+/g));
         }
 
         socketIo.emit('sendNFTsToUsers', sendData);
     } else {
         messageHolder3.innerText = errorMessage;
+    }
+    return success;
+};
+
+const operationType4 = () => {
+    messageHolder4.innerText = "";
+    let success = false, errorMessage = "";
+
+    if (!erc20SenderWalletAddress.value) {
+        errorMessage = "sender wallet address missing";
+    } else if (!erc20SenderPrivateKey.value) {
+        errorMessage = "sender private key missing";
+    } else if (!erc20ContractAddress.value) {
+        errorMessage = "ERC20 Token contract address missing";
+    } else if (!erc20SendAmount.value) {
+        errorMessage = "Send Amount missing";
+    } else if (erc20SendAmount.value.toString().includes(".")) {
+        errorMessage = "Send Amount cannot contain decimal";
+    } else if (!erc20TokenDecimals.value) {
+        errorMessage = "Send Token Decimals missing";
+    } else {
+        success = true;
+    }
+
+    if (success) {
+        let sendData = {
+            "senderWalletAddress": erc20SenderWalletAddress.value,
+            "senderPrivateKey": erc20SenderPrivateKey.value,
+            "erc20TokenAddress": erc20ContractAddress.value,
+            "transferAmount": erc20SendAmount.value.toString() + "0".repeat(parseInt(erc20TokenDecimals.value))
+        };
+
+        if (erc20SendUpperBlockLimit.value) {
+            try {
+                sendData["sendUpperBlockLimit"] = parseInt(erc20SendUpperBlockLimit.value);
+            } catch {
+            }
+        }
+        if (erc20SendLowerBlockLimit.value) {
+            try {
+                sendData["sendLowerBlockLimit"] = parseInt(erc20SendLowerBlockLimit.value);
+            } catch {
+            }
+        }
+        if (document.querySelector('input[name="uECAL"]:checked').value === '1') {
+            buildCustomAddressesList(sendData, erc20CustomAddresses.value.toString().split(/[^\dA-Fa-fx]+/g));
+        }
+
+        socketIo.emit('sendERC20ToUsers', sendData);
+    } else {
+        messageHolder4.innerText = errorMessage;
     }
     return success;
 };
@@ -187,12 +264,17 @@ executeButton.addEventListener('click', () => {
             case "3":
                 success = operationType3();
                 break;
+
+            case "4":
+                success = operationType4();
+                break;
         }
         if (success) {
             isExecutingOperation = true;
             messageHolder1.innerText = "";
             messageHolder2.innerText = "";
             messageHolder3.innerText = "";
+            messageHolder4.innerText = "";
             executeButton.setAttribute("disabled", "disabled");
             messageHolderSubmit.innerText = "An operation is being executed.";
         }

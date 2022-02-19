@@ -38,7 +38,7 @@
 
     <div style="width: 100%; height: 5vh;"></div>
 
-    <div class="blockHolder" style="background: cornsilk;">
+    <div class="blockHolder" style="background: #bd74ae;">
         <div class="messageHolder" style="border-bottom: 1px solid black;">
             2. Store database content in excel file: -
         </div>
@@ -59,7 +59,7 @@
 
     <div style="width: 100%; height: 5vh;"></div>
 
-    <div class="blockHolder" style="background: #cbac09;">
+    <div class="blockHolder" style="background: #8eab40;">
         <div class="messageHolder" style="border-bottom: 1px solid black;">
             3. Send NFT to wallets in database: -
         </div>
@@ -98,10 +98,10 @@
             </div>
             <div class="wrapper" style="height: 500px; flex: 6 0 0;">
                 <div class="subElementHolderRight">
-                    <input type="number" id="sUBL" placeholder="Upper Block Limit of Users (optional)">
+                    <input type="number" id="sUBL" placeholder="Upper Block Limit of Users (Optional)">
                 </div>
                 <div class="subElementHolderRight">
-                    <input type="number" id="sLBL" placeholder="Lower Block Limit of Users (optional)">
+                    <input type="number" id="sLBL" placeholder="Lower Block Limit of Users (Optional)">
                 </div>
                 <div class="subElementHolderRight">
                     <input type="text" id="hWA" placeholder="Holder Wallet Address" autocomplete="none">
@@ -132,7 +132,7 @@
                     <div style="height: 100%; width: 75%;"></div>
                 </div>
                 <div class="subElementHolderRight">
-                    <textarea id="cAL" placeholder="Receiver Address List (Seperated by commas)"
+                    <textarea id="cAL" placeholder="Receiver Address List (Seperated by commas) (Optional)"
                               style="resize: none;"></textarea>
                 </div>
             </div>
@@ -148,14 +148,91 @@
 
     <div style="width: 100%; height: 5vh;"></div>
 
+    <div class="blockHolder" style="background: #6c72ad;">
+        <div class="messageHolder" style="border-bottom: 1px solid black;">
+            4. Send ERC20 Tokens to wallets in database: -
+        </div>
+        <div class="subBlock">
+            <div class="wrapper" style="height: 450px; flex: 4 0 0; border-right: 1px solid black;">
+                <div class="subElementHolderLeft">
+                    <label for="eSUBL">Upper Block Limit :</label>
+                </div>
+                <div class="subElementHolderLeft">
+                    <label for="eSLBL">Lower Block Limit :</label>
+                </div>
+                <div class="subElementHolderLeft">
+                    <label for="eSWA">Wallet that holds and will send the ERC20 Tokens :</label>
+                </div>
+                <div class="subElementHolderLeft">
+                    <label for="eSPK">Private Key of sender wallet :</label>
+                </div>
+                <div class="subElementHolderLeft">
+                    <label for="eSCA">ERC20 Token Smart Contract Address :</label>
+                </div>
+                <div class="subElementHolderLeft">
+                    <label for="eRA">Transfer Amount per wallet :</label>
+                </div>
+                <div class="subElementHolderLeft">
+                    <label for="eSCD">ERC20 Token Decimals :</label>
+                </div>
+                <div class="subElementHolderLeft">
+                    <label>Use Custom Address List :</label>
+                </div>
+                <div class="subElementHolderLeft">
+                    <label for="eCAL">Custom Address List :</label>
+                </div>
+            </div>
+            <div class="wrapper" style="height: 450px; flex: 6 0 0;">
+                <div class="subElementHolderRight">
+                    <input type="number" id="eSUBL" placeholder="Upper Block Limit of Users (Optional)">
+                </div>
+                <div class="subElementHolderRight">
+                    <input type="number" id="eSLBL" placeholder="Lower Block Limit of Users (Optional)">
+                </div>
+                <div class="subElementHolderRight">
+                    <input type="text" id="eSWA" placeholder="Holder / Sender Wallet Address" autocomplete="none">
+                </div>
+                <div class="subElementHolderRight">
+                    <input type="password" id="eSPK" placeholder="Sender Wallet Private Key">
+                </div>
+                <div class="subElementHolderRight">
+                    <input type="text" id="eSCA" placeholder="ERC20 Token Smart Contract Address" autocomplete="none">
+                </div>
+                <div class="subElementHolderRight">
+                    <input id="eRA" type="number" placeholder="Token Amount that each receiver should receive.">
+                </div>
+                <div class="subElementHolderRight">
+                    <input id="eSCD" type="number" placeholder="ERC20 Token Decimals" value="18">
+                </div>
+                <div class="subElementHolderRight">
+                    <div class="subElementHolderRight" style="width: 20%; height: 100%;">
+                        <input type="radio" id="uECALYes" name="uECAL" value="1">
+                        <label for="uECALYes">Yes</label>
+                        <input type="radio" id="uECALNo" name="uECAL" value="0" checked>
+                        <label for="uECALNo">No</label>
+                    </div>
+                    <div style="height: 100%; width: 75%;"></div>
+                </div>
+                <div class="subElementHolderRight">
+                    <textarea id="eCAL" placeholder="Receiver Address List (Seperated by commas) (Optional)"
+                              style="resize: none;"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="messageHolder" id="messageHolder4" style="border-top: 1px solid black; color: crimson;"></div>
+    </div>
+
+    <div style="width: 100%; height: 5vh;"></div>
+
     <div class="blockHolder"
          style="height: 200px; border: none; flex-direction: column; justify-content: space-between; box-shadow: none;">
         <div style="text-align: center; font-size: 35px;">
             <label for="oEC">Execute Operation :&nbsp;&nbsp;&nbsp;</label>
-            <select id="oEC" style="width: 75px; height: 37px; font-size: 30px;">
+            <select id="oEC" style="width: 75px; height: 37px; font-size: 30px; border-radius: 8px;">
                 <option value="1" selected>1</option>
                 <option value="2">2</option>
                 <option value="3">3</option>
+                <option value="4">4</option>
             </select>
         </div>
 
