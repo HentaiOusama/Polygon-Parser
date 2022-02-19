@@ -125,6 +125,7 @@ const connectToDatabase = async () => {
     mongoClient = await MongoClient.connect(mongoUrl);
     userCollection = await mongoClient.db("Polygon-NFT-Data").collection("userData");
 };
+const web3 = new Web3(configData["moralisSpeedyUrl"]);
 
 let nextApiCallTime = 0, apiCallCount = 0;
 let collectedData = {}, foundContracts = {}, lastCheckedBlock;
@@ -302,17 +303,12 @@ const databaseToExcel = async (outputFilename) => {
     }
 };
 
-let currentTokenIdIndex = -1, sendTransactionCount = 0, consecutiveFailure = 0;
-const getTokenId = (tokenIdList) => {
-    currentTokenIdIndex++;
-    return tokenIdList[currentTokenIdIndex];
-};
-const sendNFTToWallet = async (web3, baseTransaction, senderPK, smartContract, functionName, params) => {
-    let execFunction = smartContract.methods[functionName];
-    baseTransaction["data"] = (typeof params === "object") ? execFunction(...params).encodeABI() : execFunction(params).encodeABI();
-
+let sendTransactionCount = 0, consecutiveFailure = 0;
+const sendTransactionToBlockchain = async (baseTransaction, senderPK, smartContract, functionName, params, sendItemName, errorTolerance) => {
     let returnResult;
     try {
+        let execFunction = smartContract.methods[functionName];
+        baseTransaction["data"] = (typeof params === "object") ? execFunction(...params).encodeABI() : execFunction(params).encodeABI();
         let signedTransaction = await web3.eth.accounts.signTransaction(baseTransaction, senderPK);
         let transactionReceipt = await web3.eth.sendSignedTransaction(signedTransaction.rawTransaction);
         if (transactionReceipt.status) {
@@ -323,18 +319,24 @@ const sendNFTToWallet = async (web3, baseTransaction, senderPK, smartContract, f
         }
         returnResult = transactionReceipt.status;
     } catch (err) {
-        console.log("Error when sending the NFT");
+        console.log("Error when sending " + sendItemName);
         console.log(err);
         consecutiveFailure += 1;
         returnResult = false;
     }
-    if (consecutiveFailure >= 10) {
-        throw "Encountered at least 10 consecutive send NFT failures. Exiting the script";
+    if (consecutiveFailure >= errorTolerance) {
+        consecutiveFailure = 0;
+        throw "Encountered at least " + errorTolerance + " consecutive send transaction failures. Terminating the operation";
     }
     return returnResult;
 };
+
+let currentTokenIdIndex = -1
+const getTokenId = (tokenIdList) => {
+    currentTokenIdIndex++;
+    return tokenIdList[currentTokenIdIndex];
+};
 const runSendNFTFunction = async (initParams) => {
-    const web3 = new Web3(configData["moralisSpeedyUrl"]);
     const baseTransaction = {
         "chainId": await web3.eth.getChainId(),
         "from": initParams["senderWalletAddress"],
@@ -358,16 +360,16 @@ const runSendNFTFunction = async (initParams) => {
 
     let isStart = true;
     let findDocument = {"hasSentNFT": {"$in": [null, false]}, "latestBlockNumber": {}};
-    let didSetBlockNumber = false;
+    let didSetNFTBlockNumber = false;
     if (initParams["sendUpperBlockLimit"]) {
         findDocument["latestBlockNumber"]["$lte"] = parseInt(initParams["sendUpperBlockLimit"]);
-        didSetBlockNumber = true;
+        didSetNFTBlockNumber = true;
     }
     if (initParams["sendLowerBlockLimit"]) {
         findDocument["latestBlockNumber"]["$gte"] = parseInt(initParams["sendLowerBlockLimit"]);
-        didSetBlockNumber = true;
+        didSetNFTBlockNumber = true;
     }
-    if (!didSetBlockNumber) {
+    if (!didSetNFTBlockNumber) {
         delete findDocument["latestBlockNumber"];
     }
 
@@ -387,7 +389,7 @@ const runSendNFTFunction = async (initParams) => {
             baseTransaction["gasPrice"] = await web3.eth.getGasPrice();
             sendTransactionCount = 1;
             if (!isStart) {
-                console.log("Transferred 25 NFTs. Transferring More...");
+                console.log("Executed 25 transactions...");
             } else {
                 isStart = false;
             }
@@ -407,8 +409,8 @@ const runSendNFTFunction = async (initParams) => {
             }
         }
 
-        let success = await sendNFTToWallet(web3, {...baseTransaction}, initParams["senderPrivateKey"],
-            nftSenderContract, configData["sendNFTFunctionName"], contractParams);
+        let success = await sendTransactionToBlockchain({...baseTransaction}, initParams["senderPrivateKey"],
+            nftSenderContract, configData["sendNFTFunctionName"], contractParams, "NFT", 10);
 
         if (success && !customAddressMode) {
             await userCollection.updateOne({"effectiveAddress": currentDocument["effectiveAddress"]},
@@ -483,6 +485,8 @@ io.on('connection', (socket) => {
             }
             isExecutingOperation = false;
         }
+        sendTransactionCount = 0;
+        currentTokenIdIndex = -1;
     });
 });
 
