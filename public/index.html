@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <title>Polygon Parser</title>
     <link rel="stylesheet" href="./index.css">
+    <script type="text/javascript" src="./../node_modules/web3/dist/web3.min.js"></script>
+    <script>
+        window["web3"] = new Web3(window["ethereum"]);
+    </script>
     <script type="text/javascript" src="./../node_modules/socket.io-client/dist/socket.io.min.js"></script>
     <script>
         window["socketIo"] = io;
@@ -33,7 +37,7 @@
                 </div>
             </div>
         </div>
-        <div class="messageHolder" id="messageHolder1" style="border-top: 1px solid black; color: crimson;"></div>
+        <div class="messageHolder" id="messageHolder1" style="border-top: 1px solid black; color: #af0e0e;"></div>
     </div>
 
     <div style="width: 100%; height: 5vh;"></div>
@@ -54,7 +58,7 @@
                 </div>
             </div>
         </div>
-        <div class="messageHolder" id="messageHolder2" style="border-top: 1px solid black; color: crimson;"></div>
+        <div class="messageHolder" id="messageHolder2" style="border-top: 1px solid black; color: #af0e0e;"></div>
     </div>
 
     <div style="width: 100%; height: 5vh;"></div>
@@ -143,7 +147,7 @@
             Text Repeater
         </a>
         </div>
-        <div class="messageHolder" id="messageHolder3" style="border-top: 1px solid black; color: crimson;"></div>
+        <div class="messageHolder" id="messageHolder3" style="border-top: 1px solid black; color: #af0e0e;"></div>
     </div>
 
     <div style="width: 100%; height: 5vh;"></div>
@@ -219,7 +223,7 @@
                 </div>
             </div>
         </div>
-        <div class="messageHolder" id="messageHolder4" style="border-top: 1px solid black; color: crimson;"></div>
+        <div class="messageHolder" id="messageHolder4" style="border-top: 1px solid black; color: #af0e0e;"></div>
     </div>
 
     <div style="width: 100%; height: 5vh;"></div>

@@ -18,8 +18,8 @@
     "0x00"
   ],
   "sendERC20FunctionName": "disperseTokenSimple",
-  "sendERC20GasLimit": 20000000,
-  "maxAddressPerERC20Send": 100,
+  "sendERC20GasLimit": 10000000,
+  "maxAddressPerERC20Send": 75,
   "sendERC20ContractAddress": "0x1b5e3e7B265E8Fa8Ee8c41ED07B046f0318E8412",
   "sendERC20ContractABI": [
     {

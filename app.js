@@ -87,10 +87,13 @@ const delay = (ms) => new Promise(res => setTimeout(res, ms));
 const buildCursorFromList = (sourceList) => {
     const items = sourceList;
     let index = 0;
+    const _hasNext = () => {
+        return index < items.length;
+    };
 
     return {
         "next": async () => {
-            if (await this.hasNext()) {
+            if (_hasNext()) {
                 return items[index++];
             } else {
                 return null;
@@ -98,7 +101,7 @@ const buildCursorFromList = (sourceList) => {
         },
 
         "hasNext": async () => {
-            return index < items.length;
+            return _hasNext();
         }
     };
 };
@@ -332,7 +335,7 @@ const sendTransactionToBlockchain = async (baseTransaction, senderPK, smartContr
     return returnResult;
 };
 
-let currentTokenIdIndex = -1
+let currentTokenIdIndex = -1;
 const getTokenId = (tokenIdList) => {
     currentTokenIdIndex++;
     return tokenIdList[currentTokenIdIndex];
@@ -387,7 +390,7 @@ const runSendNFTFunction = async (initParams) => {
 
     while (await documentWithUnsentNFT.hasNext()) {
         if (sendTransactionCount === 0) {
-            baseTransaction["gasPrice"] = await web3.eth.getGasPrice();
+            baseTransaction["gasPrice"] = ((BigInt(await web3.eth.getGasPrice()) * 125n) / 100n).toString();
             sendTransactionCount = 1;
             if (!isStart) {
                 console.log("Executed 25 transactions...");
@@ -435,7 +438,7 @@ const runSendERC20Function = async (initParams) => {
     };
     const erc20SenderContract = new web3.eth.Contract(configData["sendERC20ContractABI"], configData["sendERC20ContractAddress"]);
 
-    let isStart = true;
+    let isNonInitialTransaction = false;
     let findDocument = {"hasSentERC20": {"$in": [null, false]}, "latestBlockNumber": {}};
     let didSetERC20BlockNumber = false;
     if (initParams["sendUpperBlockLimit"]) {
@@ -463,18 +466,6 @@ const runSendERC20Function = async (initParams) => {
 
     let recipientAddresses = [];
     while (true) {
-        if (sendTransactionCount === 0) {
-            baseTransaction["gasPrice"] = await web3.eth.getGasPrice();
-            sendTransactionCount = 1;
-            if (!isStart) {
-                console.log("Executed 5 transactions...");
-            } else {
-                isStart = false;
-            }
-        } else {
-            sendTransactionCount += 1;
-            sendTransactionCount %= 5;
-        }
         if (await documentWithUnsentERC20.hasNext()) {
             if (recipientAddresses.length < maxAddressPerERC20Send) {
                 let currentDocument = await documentWithUnsentERC20.next();
@@ -487,6 +478,18 @@ const runSendERC20Function = async (initParams) => {
             }
         } else if (recipientAddresses.length === 0) {
             break;
+        }
+        if (sendTransactionCount === 0) {
+            baseTransaction["gasPrice"] = ((BigInt(await web3.eth.getGasPrice()) * 125n) / 100n).toString();
+            sendTransactionCount = 1;
+            if (isNonInitialTransaction) {
+                console.log("Executed 5 transactions...");
+            } else {
+                isNonInitialTransaction = true;
+            }
+        } else {
+            sendTransactionCount += 1;
+            sendTransactionCount %= 5;
         }
 
         let contractParams = [
