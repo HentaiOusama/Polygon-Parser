@@ -1,9 +1,9 @@
 {
   "testMode": false,
-  "moralisServerUrl": "https://7df8ninmdgvl.usemoralis.com:2053/server",
-  "moralisMasterKey": "2NTPf9bwMGUKuDFifZNDKC8o94xU2HYY2PY55gtU",
-  "moralisApiKey": "gox72ojk3us3Y1WSJsBzfVBbBO3DPCcRujuDhuERLW9L8oKVLKRVeLtI1GaUbrly",
-  "moralisSpeedyUrl": "https://speedy-nodes-nyc.moralis.io/8792dab6d01d1abaa3815793/polygon/mainnet",
+  "moralisServerUrl": "https://ley6sxaeowsj.usemoralis.com:2053/server",
+  "moralisMasterKey": "zkbVq5khThsj8tz4SVabhTQ72FrKYnyurhH1oJS1",
+  "moralisApiKey": "scD0gQRnJbJ8pRrsVblt9fB5aDUHdQ0bLjCqbX75QBhQbNCA2JPIqASuV8ZEpDeI",
+  "moralisSpeedyUrl": "https://speedy-nodes-nyc.moralis.io/297790e081b74c8e5b66d952/polygon/mainnet",
   "DBUsername": "Polygon-NFT-Parse",
   "DBPassword": "PolyParser",
   "DBClusterName": "Multi App Database Cluster",

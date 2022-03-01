@@ -221,7 +221,7 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
                     }
                     if (collectedData[effectiveAddress] == null) {
                         let code = await web3.eth.getCode(effectiveAddress);
-                        await delay(25);
+                        await delay(60);
                         if (code === "0x") {
                             collectedData[effectiveAddress] = {
                                 effectiveAddress,
