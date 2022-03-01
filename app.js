@@ -130,6 +130,7 @@ const connectToDatabase = async () => {
 };
 const web3 = new Web3(configData["moralisSpeedyUrl"]);
 
+let callWeight = 0, callStartTime = 0;
 let nextApiCallTime = 0, apiCallCount = 0;
 let collectedData = {}, foundContracts = {}, lastCheckedBlock;
 const zeroAddress = "0x0000000000000000000000000000000000000000";
@@ -165,6 +166,8 @@ const preAPICallCheck = async (appendMessage = "") => {
     console.log(`API Call ${++apiCallCount} at ${Date.now()} for ${appendMessage}`);
 };
 const fetchDataFromMoralis = async (from_block, to_block, chain) => {
+    callWeight = 0;
+    callStartTime = Date.now();
     let web3 = new Web3(configData["moralisSpeedyUrl"]);
     let cursor;
     let options = {
@@ -183,6 +186,7 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
         let callStartTime = Date.now();
         await preAPICallCheck("getting NFT transfers");
         let nftTransfers = await Moralis.Web3API.token.getNftTransfersFromToBlock(options);
+        callWeight += 5;
         cursor = nftTransfers["cursor"];
         let result = nftTransfers["result"];
 
@@ -214,28 +218,34 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
             previousData["transactionHash"] = transfer["transaction_hash"];
 
             if (shouldSave) {
-                effectiveAddress = Web3.utils.toChecksumAddress(effectiveAddress);
-                if (foundContracts[effectiveAddress] == null) {
-                    if (transfer["block_number"] !== previousData["blockNumber"]) {
-                        console.log("Found NFT transfers in Block : " + transfer["block_number"]);
-                    }
-                    if (collectedData[effectiveAddress] == null) {
-                        let code = await web3.eth.getCode(effectiveAddress);
-                        await delay(60);
-                        if (code === "0x") {
-                            collectedData[effectiveAddress] = {
-                                effectiveAddress,
-                                "foundCount": 1,
-                                "latestBlockNumber": parseInt(transfer["block_number"])
-                            };
-                        } else {
-                            foundContracts[effectiveAddress] = true;
+                if (Web3.utils.isAddress(effectiveAddress)) {
+                    effectiveAddress = Web3.utils.toChecksumAddress(effectiveAddress);
+                    if (foundContracts[effectiveAddress] == null) {
+                        if (transfer["block_number"] !== previousData["blockNumber"]) {
+                            console.log("Found NFT transfers in Block : " + transfer["block_number"]);
                         }
-                    } else {
-                        collectedData[effectiveAddress]["foundCount"] += 1;
+                        if (collectedData[effectiveAddress] == null) {
+                            let code = await web3.eth.getCode(effectiveAddress);
+                            callWeight += 3;
+                            await delay(60);
+                            if (code === "0x") {
+                                collectedData[effectiveAddress] = {
+                                    effectiveAddress,
+                                    "foundCount": 1,
+                                    "latestBlockNumber": parseInt(transfer["block_number"])
+                                };
+                            } else {
+                                foundContracts[effectiveAddress] = true;
+                            }
+                        } else {
+                            collectedData[effectiveAddress]["foundCount"] += 1;
+                        }
                     }
+                } else {
+                    console.log(transfer);
                 }
             }
+
             previousData["blockNumber"] = transfer["block_number"];
             lastCheckedBlock = previousData["blockNumber"];
 
@@ -260,13 +270,13 @@ const runFetchDataFunction = async (startBlock, endBlock, chain = "polygon") => 
     });
 
     lastCheckedBlock = startBlock.toString();
+    let consecutiveErrors = 0;
     for (let currentStartBlock = startBlock; currentStartBlock >= endBlock; currentStartBlock -= 10) {
         let currentEndBlock = currentStartBlock - 9;
         if (currentEndBlock < endBlock) {
             currentEndBlock = endBlock;
         }
         console.log("\n\nFor Loop --> " + currentStartBlock + ", " + currentEndBlock);
-        let consecutiveErrors = 0;
 
         /* The results returned by moralis are from higher block number to smaller block number */
         try {
@@ -275,14 +285,16 @@ const runFetchDataFunction = async (startBlock, endBlock, chain = "polygon") => 
             consecutiveErrors = 0;
         } catch (err) {
             console.log("Error Response from Moralis. Waiting 30 seconds before continuing.");
-            await delay(30000);
+            console.log(`callWeight: ${callWeight} from ${callStartTime} to ${Date.now()}`);
             currentStartBlock = parseInt(lastCheckedBlock) + 10;
             consecutiveErrors += 1;
 
-            if (consecutiveErrors === 10) {
-                console.log("Encountered 10 Consecutive Errors... Exiting Script.");
+            if (consecutiveErrors === 3) {
+                console.log("Encountered 3 Consecutive Errors... Exiting Script.");
                 console.log(err);
                 return;
+            } else {
+                await delay(30000);
             }
         }
 
