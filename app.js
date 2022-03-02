@@ -77,7 +77,7 @@ app.get('/node_modules/*.*', (req, res) => {
     }
 });
 // ---- SERVE STATIC FILES ---- //
-app.get('*.*', express.static(outputFolder, {maxAge: 10 * 60 * 1000}));
+app.get('*.*', express.static(outputFolder, {maxAge: 60 * 1000}));
 // ---- SERVE APPLICATION PATHS ---- //
 app.all('*', function (req, res) {
     res.status(200).sendFile(`/`, {root: outputFolder});
@@ -347,24 +347,15 @@ const sendTransactionToBlockchain = async (baseTransaction, senderPK, smartContr
     return returnResult;
 };
 
-let currentTokenIdIndex = -1;
-const getTokenId = (tokenIdList) => {
-    currentTokenIdIndex++;
-    return tokenIdList[currentTokenIdIndex];
+let currentTokenIdIndices = [];
+const getTokenId = (tokenIdList, index) => {
+    currentTokenIdIndices[index]++;
+    return tokenIdList[currentTokenIdIndices[index]];
 };
 const runSendNFTFunction = async (initParams) => {
-    const baseTransaction = {
-        "chainId": await web3.eth.getChainId(),
-        "from": initParams["senderWalletAddress"],
-        "to": initParams["nftSenderContractAddress"],
-        "value": 0,
-        "gas": configData["sendNFTGasLimit"],
-        "gasPrice": 0
-    };
-    const contractParams = configData["sendNFTFunctionParams"];
+    // Preparing Smart Contract Object
     const nftSenderContract = new web3.eth.Contract(initParams["nftSenderContractABI"], initParams["nftSenderContractAddress"]);
-
-    contractParams[0] = initParams["holderWalletAddress"];
+    const contractParams = configData["sendNFTFunctionParams"];
     let addressChangeIndex = -1, tokenIdChangeIndex = -1;
     for (let index = 0; index < contractParams.length; index++) {
         if (contractParams[index] === "#receiverAddress") {
@@ -374,9 +365,10 @@ const runSendNFTFunction = async (initParams) => {
         }
     }
 
-    let isStart = true;
-    let findDocument = {"hasSentNFT": {"$in": [null, false]}, "latestBlockNumber": {}};
-    let didSetNFTBlockNumber = false;
+    // Preparing and Performing DB Query
+    let documentWithUnsentNFT, isStart = true, didSetNFTBlockNumber = false,
+        findDocument = {"hasSentNFT": {"$in": [null, false]}, "latestBlockNumber": {}},
+        customAddressMode = initParams["useCustomAddressList"] && initParams["customAddressList"];
     if (initParams["sendUpperBlockLimit"]) {
         findDocument["latestBlockNumber"]["$lte"] = parseInt(initParams["sendUpperBlockLimit"]);
         didSetNFTBlockNumber = true;
@@ -388,9 +380,6 @@ const runSendNFTFunction = async (initParams) => {
     if (!didSetNFTBlockNumber) {
         delete findDocument["latestBlockNumber"];
     }
-
-    let documentWithUnsentNFT,
-        customAddressMode = initParams["useCustomAddressList"] && initParams["customAddressList"];
     if (customAddressMode) {
         documentWithUnsentNFT = buildCursorFromList(initParams["customAddressList"]);
     } else {
@@ -400,12 +389,33 @@ const runSendNFTFunction = async (initParams) => {
             .allowDiskUse();
     }
 
+    // Preparing Sender Wallets and Transaction Options
+    let senderWalletCount = initParams["senderPrivateKeys"].length;
+    if (initParams["transferTokenIds"].length !== senderWalletCount) {
+        throw "Token Id List Length Mismatch";
+    }
+    currentTokenIdIndices = Array(senderWalletCount).fill(-1);
+    initParams["senderWalletAddresses"] = [];
+    for (let privateKey of initParams["senderPrivateKeys"]) {
+        initParams["senderWalletAddresses"].push(web3.eth.accounts.privateKeyToAccount(privateKey).address);
+    }
+    const baseTransaction = {
+        "chainId": await web3.eth.getChainId(),
+        "to": initParams["nftSenderContractAddress"],
+        "value": 0,
+        "gas": configData["sendNFTGasLimit"],
+        "gasPrice": 0
+    };
+
+    // Getting user documents and sending NFTs
+    console.log("Pre-Processing Complete. Starting to Send NFT.");
     while (await documentWithUnsentNFT.hasNext()) {
+        let selectedReceivers = [], allTransactions = [];
         if (sendTransactionCount === 0) {
             baseTransaction["gasPrice"] = ((BigInt(await web3.eth.getGasPrice()) * 125n) / 100n).toString();
             sendTransactionCount = 1;
             if (!isStart) {
-                console.log("Executed 25 transactions...");
+                console.log("Executed 25 transactions from each wallet...");
             } else {
                 isStart = false;
             }
@@ -413,24 +423,58 @@ const runSendNFTFunction = async (initParams) => {
             sendTransactionCount += 1;
             sendTransactionCount %= 25;
         }
-        let currentDocument = await documentWithUnsentNFT.next();
 
-        if (addressChangeIndex !== -1) {
-            contractParams[addressChangeIndex] = customAddressMode ? currentDocument : currentDocument["effectiveAddress"];
-        }
-        if (tokenIdChangeIndex !== -1) {
-            contractParams[tokenIdChangeIndex] = getTokenId(initParams["transferTokenIds"]);
-            if (contractParams[tokenIdChangeIndex] === undefined) {
-                return;
+        let selectedTokenIdCount = 0;
+        for (let i = 0; i < senderWalletCount; i++) {
+            if (await documentWithUnsentNFT.hasNext()) {
+                contractParams[0] = initParams["senderWalletAddresses"][i];
+                baseTransaction["from"] = contractParams[0];
+                if (tokenIdChangeIndex !== -1) {
+                    contractParams[tokenIdChangeIndex] = getTokenId(initParams["transferTokenIds"][i], i);
+
+                    if (contractParams[tokenIdChangeIndex] === undefined) {
+                        continue;
+                    } else {
+                        selectedTokenIdCount++;
+                    }
+                }
+
+                let currentDocument = await documentWithUnsentNFT.next();
+                let selectedAddress = customAddressMode ? currentDocument : currentDocument["effectiveAddress"];
+                selectedReceivers.push(selectedAddress);
+                if (addressChangeIndex !== -1) {
+                    contractParams[addressChangeIndex] = selectedAddress;
+                }
+
+                allTransactions.push(sendTransactionToBlockchain({...baseTransaction}, initParams["senderPrivateKeys"][i],
+                    nftSenderContract, configData["sendNFTFunctionName"], [...contractParams], "NFT", 10));
+            } else {
+                break;
             }
         }
+        if (selectedTokenIdCount === 0) {
+            break;
+        } else {
+            console.log("Current Receivers Batch: " + selectedReceivers);
+        }
+        let results = await Promise.allSettled(allTransactions);
+        console.log("Current Batch Transfer Complete.");
 
-        let success = await sendTransactionToBlockchain({...baseTransaction}, initParams["senderPrivateKey"],
-            nftSenderContract, configData["sendNFTFunctionName"], contractParams, "NFT", 10);
-
-        if (success && !customAddressMode) {
-            await userCollection.updateOne({"effectiveAddress": currentDocument["effectiveAddress"]},
-                {"$set": {"hasSentNFT": true}});
+        if (!customAddressMode) {
+            let didEncounterError = false;
+            for (let i = 0; i < senderWalletCount; i++) {
+                let result = results[i];
+                if (result.status === 'fulfilled') {
+                    if (result.value) {
+                        await userCollection.updateOne({"effectiveAddress": selectedReceivers[i]}, {"$set": {"hasSentNFT": true}});
+                    }
+                } else {
+                    didEncounterError = true;
+                }
+            }
+            if (didEncounterError) {
+                throw "Error! Execution Aborted";
+            }
         }
         if (testMode) {
             break;
@@ -586,7 +630,7 @@ io.on('connection', (socket) => {
             isExecutingOperation = false;
         }
         sendTransactionCount = 0;
-        currentTokenIdIndex = -1;
+        currentTokenIdIndices = [];
     });
 
     socket.on('sendERC20ToUsers', async (data) => {

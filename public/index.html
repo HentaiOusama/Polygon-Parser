@@ -68,7 +68,7 @@
             3. Send NFT to wallets in database: -
         </div>
         <div class="subBlock">
-            <div class="wrapper" style="height: 500px; flex: 4 0 0; border-right: 1px solid black;">
+            <div class="wrapper" style="height: 400px; flex: 4 0 0; border-right: 1px solid black;">
                 <div class="subElementHolderLeft">
                     <label for="sUBL">Upper Block Limit :</label>
                 </div>
@@ -76,13 +76,7 @@
                     <label for="sLBL">Lower Block Limit :</label>
                 </div>
                 <div class="subElementHolderLeft">
-                    <label for="hWA">Wallet currently holding NFTs :</label>
-                </div>
-                <div class="subElementHolderLeft">
-                    <label for="sWA">Wallet that will send the NFTs :</label>
-                </div>
-                <div class="subElementHolderLeft">
-                    <label for="sPK">Private Key of sender wallet :</label>
+                    <label for="sPK">Private Key of sender wallets :</label>
                 </div>
                 <div class="subElementHolderLeft">
                     <label for="nSCA">NFT Smart Contract Address :</label>
@@ -100,7 +94,7 @@
                     <label for="cAL">Custom Address List :</label>
                 </div>
             </div>
-            <div class="wrapper" style="height: 500px; flex: 6 0 0;">
+            <div class="wrapper" style="height: 400px; flex: 6 0 0;">
                 <div class="subElementHolderRight">
                     <input type="number" id="sUBL" placeholder="Upper Block Limit of Users (Optional)">
                 </div>
@@ -108,13 +102,11 @@
                     <input type="number" id="sLBL" placeholder="Lower Block Limit of Users (Optional)">
                 </div>
                 <div class="subElementHolderRight">
-                    <input type="text" id="hWA" placeholder="Holder Wallet Address" autocomplete="none">
-                </div>
-                <div class="subElementHolderRight">
-                    <input type="text" id="sWA" placeholder="Sender Wallet Address" autocomplete="none">
-                </div>
-                <div class="subElementHolderRight">
-                    <input type="password" id="sPK" placeholder="Sender Wallet Private Key">
+                    <input type="password" id="sPK" placeholder="Sender Wallet Private Keys (Seperated by commas)"
+                           style="width: 88%;">
+                    <button id="sPKTB" style="height: 65%; width: 7%; border-radius: 5px;">
+                        Show
+                    </button>
                 </div>
                 <div class="subElementHolderRight">
                     <input type="text" id="nSCA" placeholder="NFT Smart Contract Address" autocomplete="none">
@@ -123,7 +115,8 @@
                     <textarea id="nSC_ABI" placeholder="NFT Smart Contract ABI" style="resize: none;"></textarea>
                 </div>
                 <div class="subElementHolderRight">
-                    <textarea id="tIL" placeholder="Token Id List (Seperated by commas)"
+                    <textarea id="tIL"
+                              placeholder="Token Id List (Seperated by commas for SAME wallet and semi-colon for DIFFERENT wallets)"
                               style="resize: none;"></textarea>
                 </div>
                 <div class="subElementHolderRight">

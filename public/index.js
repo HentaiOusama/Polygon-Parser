@@ -63,13 +63,24 @@ const outputFilename = document.getElementById('oFN');
 
 const sendUpperBlockLimit = document.getElementById('sUBL');
 const sendLowerBlockLimit = document.getElementById('sLBL');
-const holderWalletAddress = document.getElementById('hWA');
-const senderWalletAddress = document.getElementById('sWA');
 const senderPrivateKey = document.getElementById('sPK');
+const senderPrivateKeyToggleButton = document.getElementById('sPKTB');
 const nftContractAddress = document.getElementById('nSCA');
 const nftContractABI = document.getElementById('nSC_ABI');
 const tokenIds = document.getElementById('tIL');
 const customAddresses = document.getElementById('cAL');
+
+let toggleType = "password";
+senderPrivateKeyToggleButton.addEventListener('click', () => {
+    if (toggleType === "password") {
+        toggleType = "text";
+        senderPrivateKeyToggleButton.innerText = "Hide";
+    } else {
+        toggleType = "password";
+        senderPrivateKeyToggleButton.innerText = "Show";
+    }
+    senderPrivateKey.setAttribute("type", toggleType);
+});
 
 const erc20SendUpperBlockLimit = document.getElementById('eSUBL');
 const erc20SendLowerBlockLimit = document.getElementById('eSLBL');
@@ -122,16 +133,22 @@ const buildCustomAddressesList = (sendData, customAddressList) => {
     sendData["customAddressList"] = customAddressList;
     sendData["useCustomAddressList"] = true;
 };
+const buildPrivateKeyList = (sendData, privateKeyList) => {
+    let len = privateKeyList.length;
+    for (let i = 0; i < len; i++) {
+        if (privateKeyList[i]) {
+            privateKeyList.push(privateKeyList[i]);
+        }
+    }
+    privateKeyList.splice(0, len);
+    sendData["senderPrivateKeys"] = privateKeyList;
+}
 
 const operationType3 = () => {
     messageHolder3.innerText = "";
-    let success = false, errorMessage = "", abi, tokenIdList;
+    let success = false, errorMessage = "", abi, tokenIdLists;
 
-    if (!holderWalletAddress.value) {
-        errorMessage = "holder wallet address missing";
-    } else if (!senderWalletAddress.value) {
-        errorMessage = "sender wallet address missing";
-    } else if (!senderPrivateKey.value) {
+    if (!senderPrivateKey.value) {
         errorMessage = "sender private key missing";
     } else if (!nftContractAddress.value) {
         errorMessage = "NFT contract address missing";
@@ -143,33 +160,53 @@ const operationType3 = () => {
         try {
             abi = JSON.parse(nftContractABI.value);
 
-            tokenIdList = tokenIds.value.toString().split(/[^\d]+/g);
-            let len = tokenIdList.length;
-            for (let i = 0; i < len; i++) {
-                if (tokenIdList[i]) {
-                    try {
-                        tokenIdList.push(parseInt(tokenIdList[i]));
-                    } catch {
+            try {
+                tokenIdLists = tokenIds.value.toString().trim().split(/[;, ]*[;]+[;, ]*/g);
+                let len = tokenIdLists.length;
+                for (let i = 0; i < len; i++) {
+                    if (tokenIdLists[i]) {
+                        try {
+                            tokenIdLists.push(tokenIdLists[i]);
+                        } catch {
+                        }
                     }
                 }
-            }
-            tokenIdList.splice(0, len);
+                tokenIdLists.splice(0, len);
+                console.log(tokenIdLists);
 
-            success = true;
-        } catch {
+                for (let i = 0; i < tokenIdLists.length; i++) {
+                    let tokenIdList = tokenIdLists[i].trim().split(/[^\d]+/g);
+                    len = tokenIdList.length;
+                    for (let j = 0; j < len; j++) {
+                        if (tokenIdList[j]) {
+                            try {
+                                tokenIdList.push(parseInt(tokenIdList[j]));
+                            } catch {
+                            }
+                        }
+                    }
+                    tokenIdList.splice(0, len);
+                    tokenIdLists[i] = tokenIdList;
+                }
+
+                success = true;
+            } catch (err) {
+                success = false;
+                console.log(err);
+                errorMessage = "Invalid TokenIds";
+            }
+        } catch (err) {
             success = false;
+            console.log(err);
             errorMessage = "Invalid Contract ABI";
         }
     }
 
     if (success) {
         let sendData = {
-            "holderWalletAddress": holderWalletAddress.value,
-            "senderWalletAddress": senderWalletAddress.value,
-            "senderPrivateKey": senderPrivateKey.value,
             "nftSenderContractAddress": nftContractAddress.value,
             "nftSenderContractABI": abi,
-            "transferTokenIds": tokenIdList
+            "transferTokenIds": tokenIdLists
         };
 
         if (sendUpperBlockLimit.value) {
@@ -184,8 +221,9 @@ const operationType3 = () => {
             } catch {
             }
         }
+        buildPrivateKeyList(sendData, senderPrivateKey.value.toString().trim().split(/[^\dA-Fa-f]+/g));
         if (document.querySelector('input[name="uCAL"]:checked').value === '1') {
-            buildCustomAddressesList(sendData, customAddresses.value.toString().split(/[^\dA-Fa-fx]+/g));
+            buildCustomAddressesList(sendData, customAddresses.value.toString().trim().split(/[^\dA-Fa-fx]+/g));
         }
 
         socketIo.emit('sendNFTsToUsers', sendData);
@@ -291,7 +329,7 @@ const operationType4 = async () => {
                             }
                         }
                         if (document.querySelector('input[name="uECAL"]:checked').value === '1') {
-                            buildCustomAddressesList(sendData, erc20CustomAddresses.value.toString().split(/[^\dA-Fa-fx]+/g));
+                            buildCustomAddressesList(sendData, erc20CustomAddresses.value.toString().trim().split(/[^\dA-Fa-fx]+/g));
                         }
 
                         socketIo.emit('sendERC20ToUsers', sendData);
