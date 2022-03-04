@@ -379,8 +379,7 @@ const runSendNFTFunction = async (initParams) => {
     }
 
     // Preparing and Performing DB Query
-    let documentWithUnsentNFT, isStart = true, didSetNFTBlockNumber = false,
-        findDocument = {"hasSentNFT": {"$in": [null, false]}, "latestBlockNumber": {}},
+    let documentWithUnsentNFT, didSetNFTBlockNumber = false, findDocument = {"latestBlockNumber": {}},
         customAddressMode = initParams["useCustomAddressList"] && initParams["customAddressList"];
     if (initParams["sendUpperBlockLimit"]) {
         findDocument["latestBlockNumber"]["$lte"] = parseInt(initParams["sendUpperBlockLimit"]);
@@ -422,19 +421,15 @@ const runSendNFTFunction = async (initParams) => {
 
     // Getting user documents and sending NFTs
     console.log("Pre-Processing Complete. Starting to Send NFT.");
+    let sendCount = 0;
     while (await documentWithUnsentNFT.hasNext()) {
         let selectedReceivers = [], allTransactions = [];
         if (sendTransactionCount === 0) {
             baseTransaction["gasPrice"] = ((BigInt(await web3.eth.getGasPrice()) * 125n) / 100n).toString();
             sendTransactionCount = 1;
-            if (!isStart) {
-                console.log("Executed 25 transactions from each wallet...");
-            } else {
-                isStart = false;
-            }
         } else {
             sendTransactionCount += 1;
-            sendTransactionCount %= 25;
+            sendTransactionCount %= 15;
         }
 
         let selectedTokenIdCount = 0;
@@ -466,6 +461,7 @@ const runSendNFTFunction = async (initParams) => {
             }
         }
         if (selectedTokenIdCount === 0) {
+            console.log("All NFT sending complete. Sent a total of " + sendCount + " NFTs");
             break;
         } else {
             console.log("Current Receivers Batch: " + selectedReceivers);
@@ -507,9 +503,7 @@ const runSendERC20Function = async (initParams) => {
     };
     const erc20SenderContract = new web3.eth.Contract(configData["sendERC20ContractABI"], configData["sendERC20ContractAddress"]);
 
-    let isNonInitialTransaction = false;
-    let findDocument = {"hasSentERC20": {"$in": [null, false]}, "latestBlockNumber": {}};
-    let didSetERC20BlockNumber = false;
+    let isNonInitialTransaction = false, findDocument = {"latestBlockNumber": {}}, didSetERC20BlockNumber = false;
     if (initParams["sendUpperBlockLimit"]) {
         findDocument["latestBlockNumber"]["$lte"] = parseInt(initParams["sendUpperBlockLimit"]);
         didSetERC20BlockNumber = true;
