@@ -353,9 +353,20 @@ const getTokenId = (tokenIdList, index) => {
     return tokenIdList[currentTokenIdIndices[index]];
 };
 const runSendNFTFunction = async (initParams) => {
+    let contractABI = initParams["nftSenderContractABI"];
+    let paramsCount = -1;
+    for (let sCFunction of contractABI) {
+        if (sCFunction["name"] === configData["sendNFTFunctionName"]) {
+            let currParamCount = sCFunction["inputs"].length;
+            if (currParamCount > paramsCount) {
+                paramsCount = currParamCount;
+            }
+        }
+    }
+
     // Preparing Smart Contract Object
-    const nftSenderContract = new web3.eth.Contract(initParams["nftSenderContractABI"], initParams["nftSenderContractAddress"]);
-    const contractParams = configData["sendNFTFunctionParams"];
+    const nftSenderContract = new web3.eth.Contract(contractABI, initParams["nftSenderContractAddress"]);
+    const contractParams = configData["sendNFTFunctionParams"][paramsCount];
     let addressChangeIndex = -1, tokenIdChangeIndex = -1;
     for (let index = 0; index < contractParams.length; index++) {
         if (contractParams[index] === "#receiverAddress") {

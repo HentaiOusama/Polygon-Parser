@@ -10,13 +10,27 @@
   "DBName": "Polygon-NFT-Data",
   "sendNFTGasLimit": 250000,
   "sendNFTFunctionName": "safeTransferFrom",
-  "sendNFTFunctionParams": [
-    "",
-    "#receiverAddress",
-    "#tokenId",
-    1,
-    "0x00"
-  ],
+  "sendNFTFunctionParams": {
+    "3": [
+      "",
+      "#receiverAddress",
+      "#tokenId",
+      "0x00"
+    ],
+    "4": [
+      "",
+      "#receiverAddress",
+      "#tokenId",
+      "0x00"
+    ],
+    "5": [
+      "",
+      "#receiverAddress",
+      "#tokenId",
+      1,
+      "0x00"
+    ]
+  },
   "sendERC20FunctionName": "disperseTokenSimple",
   "sendERC20GasLimit": 10000000,
   "maxAddressPerERC20Send": 75,
