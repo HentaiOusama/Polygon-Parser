@@ -345,6 +345,7 @@ const sendTransactionToBlockchain = async (baseTransaction, senderPK, smartContr
         consecutiveFailure = 0;
         throw "Encountered at least " + errorTolerance + " consecutive send transaction failures. Terminating the operation";
     }
+    await delay(5000);
     return returnResult;
 };
 
