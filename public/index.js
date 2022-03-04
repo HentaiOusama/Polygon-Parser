@@ -1,5 +1,11 @@
 const socketIo = window["socketIo"](window.location.origin);
 
+const versionHolder = document.getElementById("cSVH");
+socketIo.emit('getSoftwareVersion');
+socketIo.on('setSoftwareVersion', (softwareVersion) => {
+    versionHolder.innerText = "Software Version: " + softwareVersion;
+});
+
 let isExecutingOperation = false;
 
 const messageHolder1 = document.getElementById('messageHolder1');

@@ -30,6 +30,7 @@ const express = require('express');
 const http = require('http');
 const {Server} = require('socket.io');
 const configData = require("./configData.json");
+const packageJson = require("./package.json");
 const {MongoClient, Collection} = require('mongodb');
 const Json2csvParser = require('json2csv').Parser;
 const fs = require("fs");
@@ -579,6 +580,10 @@ const runSendERC20Function = async (initParams) => {
 
 let isExecutingOperation = false;
 io.on('connection', (socket) => {
+    socket.on('getSoftwareVersion', () => {
+        socket.emit('setSoftwareVersion', packageJson["version"]);
+    });
+
     socket.on('fetchPolygonNFTUsers', async (blockData) => {
         if (isExecutingOperation) {
             socket.emit('alreadyExecutingOperation');
