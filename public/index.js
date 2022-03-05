@@ -29,7 +29,7 @@ const messageHolder4 = document.getElementById('messageHolder4');
 const messageHolderSubmit = document.getElementById('messageHolderSubmit');
 
 socketIo.on('fetchPolygonNFTUsersResult', (data) => {
-    if (data["success"]) {
+    if (data["success"] === "true" || data["success"] === true) {
         messageHolder1.innerText = "Operation completed successfully";
     } else {
         messageHolder1.innerText = JSON.stringify(data["error"]);
@@ -40,7 +40,7 @@ socketIo.on('fetchPolygonNFTUsersResult', (data) => {
     messageHolderSubmit.innerText = "";
 });
 socketIo.on('databaseToExcelResult', (data) => {
-    if (data["success"]) {
+    if (data["success"] === "true" || data["success"] === true) {
         messageHolder2.innerText = "Operation completed successfully";
     } else {
         messageHolder2.innerText = JSON.stringify(data["error"]);
@@ -51,7 +51,7 @@ socketIo.on('databaseToExcelResult', (data) => {
     messageHolderSubmit.innerText = "";
 });
 socketIo.on('sendNFTsToUsersResult', (data) => {
-    if (data["success"] === true) {
+    if (data["success"] === "true" || data["success"] === true) {
         messageHolder3.innerText = "Operation completed successfully";
     } else {
         messageHolder3.innerText = JSON.stringify(data["error"]);
@@ -62,7 +62,7 @@ socketIo.on('sendNFTsToUsersResult', (data) => {
     messageHolderSubmit.innerText = "";
 });
 socketIo.on('sendERC20ToUsersResult', (data) => {
-    if (data["success"] === true) {
+    if (data["success"] === "true" || data["success"] === true) {
         messageHolder4.innerText = "Operation completed successfully";
     } else {
         messageHolder4.innerText = JSON.stringify(data["error"]);
