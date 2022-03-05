@@ -74,68 +74,76 @@
             3. Send NFT to wallets in database: -
         </div>
         <div class="subBlock">
-            <div class="wrapper" style="height: 400px; flex: 4 0 0; border-right: 1px solid black;">
+            <div class="wrapper" style="height: 450px; flex: 4 0 0; border-right: 1px solid black;">
                 <div class="subElementHolderLeft">
-                    <label for="sUBL">Upper Block Limit :</label>
+                    <label for="nSUBL">Upper Block Limit :</label>
                 </div>
                 <div class="subElementHolderLeft">
-                    <label for="sLBL">Lower Block Limit :</label>
+                    <label for="nSLBL">Lower Block Limit :</label>
                 </div>
                 <div class="subElementHolderLeft">
-                    <label for="sPK">Private Key of sender wallets :</label>
+                    <label for="nSWA">Wallet that holds and will send the NFTs :</label>
+                </div>
+                <div class="subElementHolderLeft">
+                    <label for="nSPK">Private Key of sender wallet :</label>
                 </div>
                 <div class="subElementHolderLeft">
                     <label for="nSCA">NFT Smart Contract Address :</label>
                 </div>
                 <div class="subElementHolderLeft">
-                    <label for="nSC_ABI">NFT Smart Contract ABI :</label>
+                    <label>NFT Type :</label>
                 </div>
                 <div class="subElementHolderLeft">
-                    <label for="tIL">Token Ids :</label>
+                    <label for="nTIL">Token Ids :</label>
                 </div>
                 <div class="subElementHolderLeft">
                     <label>Use Custom Address List :</label>
                 </div>
                 <div class="subElementHolderLeft">
-                    <label for="cAL">Custom Address List :</label>
+                    <label for="nCAL">Custom Address List :</label>
                 </div>
             </div>
-            <div class="wrapper" style="height: 400px; flex: 6 0 0;">
+            <div class="wrapper" style="height: 450px; flex: 6 0 0;">
                 <div class="subElementHolderRight">
-                    <input type="number" id="sUBL" placeholder="Upper Block Limit of Users (Optional)">
+                    <input type="number" id="nSUBL" placeholder="Upper Block Limit of Users (Optional)">
                 </div>
                 <div class="subElementHolderRight">
-                    <input type="number" id="sLBL" placeholder="Lower Block Limit of Users (Optional)">
+                    <input type="number" id="nSLBL" placeholder="Lower Block Limit of Users (Optional)">
                 </div>
                 <div class="subElementHolderRight">
-                    <input type="password" id="sPK" placeholder="Sender Wallet Private Keys (Seperated by commas)"
-                           style="width: 88%;">
-                    <button id="sPKTB" style="height: 65%; width: 7%; border-radius: 5px;">
-                        Show
-                    </button>
+                    <input type="text" id="nSWA" placeholder="Holder / Sender Wallet Address" autocomplete="none">
+                </div>
+                <div class="subElementHolderRight">
+                    <input type="password" id="nSPK" placeholder="Sender Wallet Private Key">
                 </div>
                 <div class="subElementHolderRight">
                     <input type="text" id="nSCA" placeholder="NFT Smart Contract Address" autocomplete="none">
                 </div>
                 <div class="subElementHolderRight">
-                    <textarea id="nSC_ABI" placeholder="NFT Smart Contract ABI" style="resize: none;"></textarea>
+                    <div class="subElementHolderRight" style="width: 35%; height: 100%;">
+                        <input style="width: 30%;" type="radio" id="nERC-721" name="NFT-Type" value="1">
+                        <label style="width: 70%;" for="nERC-721">ERC-721</label>
+                        <input style="width: 30%;" type="radio" id="nERC-1155" name="NFT-Type" value="0" checked>
+                        <label style="width: 70%;" for="nERC-1155">ERC-1155</label>
+                    </div>
+                    <div style="height: 100%; width: 60%;"></div>
                 </div>
                 <div class="subElementHolderRight">
-                    <textarea id="tIL"
-                              placeholder="Token Id List (Seperated by commas for SAME wallet and semi-colon for DIFFERENT wallets)"
+                    <textarea id="nTIL"
+                              placeholder="Token Id List (Seperated by commas)"
                               style="resize: none;"></textarea>
                 </div>
                 <div class="subElementHolderRight">
                     <div class="subElementHolderRight" style="width: 20%; height: 100%;">
-                        <input type="radio" id="uCALYes" name="uCAL" value="1">
-                        <label for="uCALYes">Yes</label>
-                        <input type="radio" id="uCALNo" name="uCAL" value="0" checked>
-                        <label for="uCALNo">No</label>
+                        <input type="radio" id="uNCALYes" name="uECAL" value="1">
+                        <label for="uNCALYes">Yes</label>
+                        <input type="radio" id="uNCALNo" name="uECAL" value="0" checked>
+                        <label for="uNCALNo">No</label>
                     </div>
                     <div style="height: 100%; width: 75%;"></div>
                 </div>
                 <div class="subElementHolderRight">
-                    <textarea id="cAL" placeholder="Receiver Address List (Seperated by commas) (Optional)"
+                    <textarea id="nCAL" placeholder="Receiver Address List (Seperated by commas) (Optional)"
                               style="resize: none;"></textarea>
                 </div>
             </div>
