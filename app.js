@@ -321,6 +321,15 @@ const databaseToExcel = async (outputFilename) => {
 };
 
 let sendTransactionCount = 0, consecutiveFailure = 0;
+const updateGasPrice = async (baseTransaction) => {
+    if (sendTransactionCount === 0) {
+        baseTransaction["gasPrice"] = ((BigInt(await web3.eth.getGasPrice()) * 125n) / 100n).toString();
+        sendTransactionCount = 1;
+    } else {
+        sendTransactionCount += 1;
+        sendTransactionCount %= 5;
+    }
+};
 const sendTransactionToBlockchain = async (baseTransaction, senderPK, smartContract, functionName, params, sendItemName, errorTolerance) => {
     let returnResult;
     try {
@@ -335,6 +344,7 @@ const sendTransactionToBlockchain = async (baseTransaction, senderPK, smartContr
             console.log(transactionReceipt);
         }
         returnResult = transactionReceipt.status;
+        console.log(sendItemName + " batch transfer complete. Trx. Hash : " + transactionReceipt.transactionHash);
     } catch (err) {
         console.log("Error when sending " + sendItemName);
         console.log(err);
@@ -345,7 +355,7 @@ const sendTransactionToBlockchain = async (baseTransaction, senderPK, smartContr
         consecutiveFailure = 0;
         throw "Encountered at least " + errorTolerance + " consecutive send transaction failures. Terminating the operation";
     }
-    await delay(5000);
+    await delay(7000);
     return returnResult;
 };
 
@@ -365,7 +375,7 @@ const runSendNFTFunction = async (initParams) => {
     };
     const nftSenderContract = new web3.eth.Contract(configData["sendNFTContractABI"], configData["sendNFTContractAddress"]);
 
-    let isNonInitialTransaction = false, findDocument = {"latestBlockNumber": {}}, didSetNFTBlockNumber = false;
+    let findDocument = {"latestBlockNumber": {}}, didSetNFTBlockNumber = false;
     if (initParams["sendUpperBlockLimit"]) {
         findDocument["latestBlockNumber"]["$lte"] = parseInt(initParams["sendUpperBlockLimit"]);
         didSetNFTBlockNumber = true;
@@ -415,21 +425,10 @@ const runSendNFTFunction = async (initParams) => {
                 break;
             }
         } else if (recipientAddresses.length === 0) {
-            // TODO : Add some indication message.
+            console.log("Operation Complete");
             break;
         }
-        if (sendTransactionCount === 0) {
-            baseTransaction["gasPrice"] = ((BigInt(await web3.eth.getGasPrice()) * 125n) / 100n).toString();
-            sendTransactionCount = 1;
-            if (isNonInitialTransaction) {
-                console.log("Executed 5 transactions...");
-            } else {
-                isNonInitialTransaction = true;
-            }
-        } else {
-            sendTransactionCount += 1;
-            sendTransactionCount %= 5;
-        }
+        await updateGasPrice(baseTransaction);
 
         let contractParams;
         switch (sendFunctionParamCount) {
@@ -483,7 +482,7 @@ const runSendERC20Function = async (initParams) => {
     };
     const erc20SenderContract = new web3.eth.Contract(configData["sendERC20ContractABI"], configData["sendERC20ContractAddress"]);
 
-    let isNonInitialTransaction = false, findDocument = {"latestBlockNumber": {}}, didSetERC20BlockNumber = false;
+    let findDocument = {"latestBlockNumber": {}}, didSetERC20BlockNumber = false;
     if (initParams["sendUpperBlockLimit"]) {
         findDocument["latestBlockNumber"]["$lte"] = parseInt(initParams["sendUpperBlockLimit"]);
         didSetERC20BlockNumber = true;
@@ -520,20 +519,10 @@ const runSendERC20Function = async (initParams) => {
                 continue;
             }
         } else if (recipientAddresses.length === 0) {
+            console.log("Operation Complete.");
             break;
         }
-        if (sendTransactionCount === 0) {
-            baseTransaction["gasPrice"] = ((BigInt(await web3.eth.getGasPrice()) * 125n) / 100n).toString();
-            sendTransactionCount = 1;
-            if (isNonInitialTransaction) {
-                console.log("Executed 5 transactions...");
-            } else {
-                isNonInitialTransaction = true;
-            }
-        } else {
-            sendTransactionCount += 1;
-            sendTransactionCount %= 5;
-        }
+        await updateGasPrice(baseTransaction);
 
         let contractParams = [
             initParams["erc20TokenAddress"], recipientAddresses, Array(recipientAddresses.length).fill(initParams["transferAmount"])
