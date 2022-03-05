@@ -8,10 +8,13 @@
   "DBPassword": "PolyParser",
   "DBClusterName": "Multi App Database Cluster",
   "DBName": "Polygon-NFT-Data",
-  "sendNFTFunctionName": "disperseNFTs",
+  "sendNFTFunctionName": {
+    "4": "disperseNFTs_721_1",
+    "5": "disperseNFTs_1155_2"
+  },
   "sendNFTGasLimit": 10000000,
-  "maxAddressPerNFTSend": 50,
-  "sendNFTContractAddress": "0xE3eEe9323469E2979BA91e2aD787036D54Ff650a",
+  "maxAddressPerNFTSend": 100,
+  "sendNFTContractAddress": "0x3D08da4a9C0Ef831f15f4A4212CF57ABD3689691",
   "sendNFTContractABI": [
     {
       "inputs": [
@@ -31,12 +34,17 @@
           "type": "address[]"
         },
         {
-          "internalType": "uint256[]",
-          "name": "tokenIds",
-          "type": "uint256[]"
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amounts",
+          "type": "uint256"
         }
       ],
-      "name": "disperseNFTs",
+      "name": "disperseNFTs_1155_1",
       "outputs": [
         {
           "internalType": "bool[]",
@@ -75,7 +83,46 @@
           "type": "uint256"
         }
       ],
-      "name": "disperseNFTs",
+      "name": "disperseNFTs_1155_2",
+      "outputs": [
+        {
+          "internalType": "bool[]",
+          "name": "result",
+          "type": "bool[]"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract NFT",
+          "name": "nft",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "address[]",
+          "name": "recipients",
+          "type": "address[]"
+        },
+        {
+          "internalType": "uint256",
+          "name": "tokenIds",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "amounts",
+          "type": "uint256[]"
+        }
+      ],
+      "name": "disperseNFTs_1155_3",
       "outputs": [
         {
           "internalType": "bool[]",
@@ -114,7 +161,41 @@
           "type": "uint256[]"
         }
       ],
-      "name": "disperseNFTs",
+      "name": "disperseNFTs_1155_4",
+      "outputs": [
+        {
+          "internalType": "bool[]",
+          "name": "result",
+          "type": "bool[]"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "contract NFT",
+          "name": "nft",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "address[]",
+          "name": "recipients",
+          "type": "address[]"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "tokenIds",
+          "type": "uint256[]"
+        }
+      ],
+      "name": "disperseNFTs_721_1",
       "outputs": [
         {
           "internalType": "bool[]",
@@ -158,7 +239,7 @@
           "type": "bool"
         }
       ],
-      "name": "disperseNFTs",
+      "name": "disperseNFTs_721_2",
       "outputs": [
         {
           "internalType": "bool[]",
@@ -168,89 +249,11 @@
       ],
       "stateMutability": "payable",
       "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "contract NFT",
-          "name": "nft",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "from",
-          "type": "address"
-        },
-        {
-          "internalType": "address[]",
-          "name": "recipients",
-          "type": "address[]"
-        },
-        {
-          "internalType": "uint256",
-          "name": "tokenId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "amounts",
-          "type": "uint256"
-        }
-      ],
-      "name": "disperseNFTs",
-      "outputs": [
-        {
-          "internalType": "bool[]",
-          "name": "result",
-          "type": "bool[]"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "contract NFT",
-          "name": "nft",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "from",
-          "type": "address"
-        },
-        {
-          "internalType": "address[]",
-          "name": "recipients",
-          "type": "address[]"
-        },
-        {
-          "internalType": "uint256",
-          "name": "tokenIds",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256[]",
-          "name": "amounts",
-          "type": "uint256[]"
-        }
-      ],
-      "name": "disperseNFTs",
-      "outputs": [
-        {
-          "internalType": "bool[]",
-          "name": "result",
-          "type": "bool[]"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
     }
   ],
   "sendERC20FunctionName": "disperseTokenSimple",
   "sendERC20GasLimit": 10000000,
-  "maxAddressPerERC20Send": 75,
+  "maxAddressPerERC20Send": 150,
   "sendERC20ContractAddress": "0x1b5e3e7B265E8Fa8Ee8c41ED07B046f0318E8412",
   "sendERC20ContractABI": [
     {

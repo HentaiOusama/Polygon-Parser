@@ -456,7 +456,7 @@ const runSendNFTFunction = async (initParams) => {
         }
 
         let success = await sendTransactionToBlockchain({...baseTransaction}, initParams["senderPrivateKey"],
-            nftSenderContract, configData["sendNFTFunctionName"], contractParams, "NFT", 3);
+            nftSenderContract, configData["sendNFTFunctionName"][sendFunctionParamCount], contractParams, "NFT", 3);
 
         if (success && !customAddressMode) {
             for (let address of recipientAddresses) {
@@ -607,6 +607,7 @@ io.on('connection', (socket) => {
         } else {
             isExecutingOperation = true;
             try {
+                await delay(7000);
                 await runSendNFTFunction(data);
                 socket.emit('sendNFTsToUsersResult', {
                     "success": true
@@ -630,6 +631,7 @@ io.on('connection', (socket) => {
         } else {
             isExecutingOperation = true;
             try {
+                await delay(7000);
                 await runSendERC20Function(data);
                 socket.emit('sendERC20ToUsersResult', {
                     "success": true

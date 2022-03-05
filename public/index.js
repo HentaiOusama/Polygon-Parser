@@ -51,7 +51,7 @@ socketIo.on('databaseToExcelResult', (data) => {
     messageHolderSubmit.innerText = "";
 });
 socketIo.on('sendNFTsToUsersResult', (data) => {
-    if (data["success"]) {
+    if (data["success"] === true) {
         messageHolder3.innerText = "Operation completed successfully";
     } else {
         messageHolder3.innerText = JSON.stringify(data["error"]);
@@ -62,7 +62,7 @@ socketIo.on('sendNFTsToUsersResult', (data) => {
     messageHolderSubmit.innerText = "";
 });
 socketIo.on('sendERC20ToUsersResult', (data) => {
-    if (data["success"]) {
+    if (data["success"] === true) {
         messageHolder4.innerText = "Operation completed successfully";
     } else {
         messageHolder4.innerText = JSON.stringify(data["error"]);
@@ -241,14 +241,14 @@ const operationType3 = async () => {
             ], nftContractAddress.value);
             let hasApprovedAll = await nftSmartContract.methods["isApprovedForAll"](
                 nftSenderWalletAddress.value,
-                "0xE3eEe9323469E2979BA91e2aD787036D54Ff650a"
+                "0x3D08da4a9C0Ef831f15f4A4212CF57ABD3689691"
             ).call();
 
             if (!hasApprovedAll) {
                 let gasPrice = await getGasPrice();
                 try {
                     messageHolder3.innerText = "Waiting For Confirmation of Approve Transaction (Do NOT speed up the transaction).";
-                    await nftSmartContract.methods["setApprovalForAll"]("0xE3eEe9323469E2979BA91e2aD787036D54Ff650a", true).send({
+                    await nftSmartContract.methods["setApprovalForAll"]("0x3D08da4a9C0Ef831f15f4A4212CF57ABD3689691", true).send({
                         "from": nftSenderWalletAddress.value,
                         gasPrice
                     });
