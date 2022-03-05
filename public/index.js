@@ -115,7 +115,7 @@ const requireCorrectWallet = (requiredWalletAddress) => {
 const getGasPrice = async () => {
     let gasPrice = await window["web3"].eth.getGasPrice();
     console.log("Gas Price : " + gasPrice);
-    return ((BigInt(gasPrice) * 125n) / 100n).toString();
+    return ((BigInt(gasPrice) * 150n) / 100n).toString();
 };
 
 const operationType1 = () => {

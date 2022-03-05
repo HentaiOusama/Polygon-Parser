@@ -323,7 +323,7 @@ const databaseToExcel = async (outputFilename) => {
 let sendTransactionCount = 0, consecutiveFailure = 0;
 const updateGasPrice = async (baseTransaction) => {
     if (sendTransactionCount === 0) {
-        baseTransaction["gasPrice"] = ((BigInt(await web3.eth.getGasPrice()) * 125n) / 100n).toString();
+        baseTransaction["gasPrice"] = ((BigInt(await web3.eth.getGasPrice()) * 140n) / 100n).toString();
         sendTransactionCount = 1;
     } else {
         sendTransactionCount += 1;
