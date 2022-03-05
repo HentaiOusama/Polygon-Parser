@@ -11,7 +11,7 @@
   "sendNFTFunctionName": "disperseNFTs",
   "sendNFTGasLimit": 10000000,
   "maxAddressPerNFTSend": 50,
-  "sendNFTContractAddress": "____________________________________________",
+  "sendNFTContractAddress": "0xE3eEe9323469E2979BA91e2aD787036D54Ff650a",
   "sendNFTContractABI": [
     {
       "inputs": [

@@ -6,6 +6,20 @@ socketIo.on('setSoftwareVersion', (softwareVersion) => {
     versionHolder.innerText = "Software Version: " + softwareVersion;
 });
 
+let userAccount = null;
+window["ethereum"].on('accountsChanged', (acc) => {
+    userAccount = window["web3"].utils.toChecksumAddress(acc[0]);
+    console.log("Account Changed to : " + userAccount);
+});
+window["ethereum"].request({method: 'eth_requestAccounts'}).then((acc) => {
+    userAccount = window["web3"].utils.toChecksumAddress(acc[0]);
+    console.log("Account Changed to : " + userAccount);
+}).catch((err) => {
+    console.log("Error getting user accounts");
+    console.log(err);
+    userAccount = null;
+});
+
 let isExecutingOperation = false;
 
 const messageHolder1 = document.getElementById('messageHolder1');
@@ -67,26 +81,13 @@ const lowerBlockLimit = document.getElementById('lBL');
 
 const outputFilename = document.getElementById('oFN');
 
-const sendUpperBlockLimit = document.getElementById('sUBL');
-const sendLowerBlockLimit = document.getElementById('sLBL');
-const senderPrivateKey = document.getElementById('sPK');
-const senderPrivateKeyToggleButton = document.getElementById('sPKTB');
+const nftSendUpperBlockLimit = document.getElementById('nSUBL');
+const nftSendLowerBlockLimit = document.getElementById('nSLBL');
+const nftSenderWalletAddress = document.getElementById('nSWA');
+const nftSenderPrivateKey = document.getElementById('nSPK');
 const nftContractAddress = document.getElementById('nSCA');
-const nftContractABI = document.getElementById('nSC_ABI');
-const tokenIds = document.getElementById('tIL');
-const customAddresses = document.getElementById('cAL');
-
-let toggleType = "password";
-senderPrivateKeyToggleButton.addEventListener('click', () => {
-    if (toggleType === "password") {
-        toggleType = "text";
-        senderPrivateKeyToggleButton.innerText = "Hide";
-    } else {
-        toggleType = "password";
-        senderPrivateKeyToggleButton.innerText = "Show";
-    }
-    senderPrivateKey.setAttribute("type", toggleType);
-});
+const nftTokenIdList = document.getElementById('nTIL');
+const nftCustomAddresses = document.getElementById('nCAL');
 
 const erc20SendUpperBlockLimit = document.getElementById('eSUBL');
 const erc20SendLowerBlockLimit = document.getElementById('eSLBL');
@@ -96,6 +97,26 @@ const erc20ContractAddress = document.getElementById('eSCA');
 const erc20SendAmount = document.getElementById('eRA');
 const erc20TokenDecimals = document.getElementById('eSCD');
 const erc20CustomAddresses = document.getElementById('eCAL');
+
+const buildCustomAddressesList = (sendData, customAddressList) => {
+    let len = customAddressList.length;
+    for (let i = 0; i < len; i++) {
+        if (customAddressList[i]) {
+            customAddressList.push(customAddressList[i]);
+        }
+    }
+    customAddressList.splice(0, len);
+    sendData["customAddressList"] = customAddressList;
+    sendData["useCustomAddressList"] = true;
+};
+const requireCorrectWallet = (requiredWalletAddress) => {
+    return userAccount.toLowerCase() === requiredWalletAddress.toLowerCase();
+};
+const getGasPrice = async () => {
+    let gasPrice = await window["web3"].eth.getGasPrice();
+    console.log("Gas Price : " + gasPrice);
+    return ((BigInt(gasPrice) * 125n) / 100n).toString();
+};
 
 const operationType1 = () => {
     messageHolder1.innerText = "";
@@ -128,108 +149,146 @@ const operationType2 = () => {
     return true;
 };
 
-const buildCustomAddressesList = (sendData, customAddressList) => {
-    let len = customAddressList.length;
-    for (let i = 0; i < len; i++) {
-        if (customAddressList[i]) {
-            customAddressList.push(customAddressList[i]);
-        }
-    }
-    customAddressList.splice(0, len);
-    sendData["customAddressList"] = customAddressList;
-    sendData["useCustomAddressList"] = true;
-};
-const buildPrivateKeyList = (sendData, privateKeyList) => {
-    let len = privateKeyList.length;
-    for (let i = 0; i < len; i++) {
-        if (privateKeyList[i]) {
-            privateKeyList.push(privateKeyList[i]);
-        }
-    }
-    privateKeyList.splice(0, len);
-    sendData["senderPrivateKeys"] = privateKeyList;
-}
-
-const operationType3 = () => {
+const operationType3 = async () => {
     messageHolder3.innerText = "";
-    let success = false, errorMessage = "", abi, tokenIdLists;
+    let success = false, errorMessage = "", nftType, tokenIdList = null;
 
-    if (!senderPrivateKey.value) {
+    if (!nftSenderWalletAddress.value) {
+        errorMessage = "sender wallet address missing";
+    } else if (!nftSenderPrivateKey.value) {
         errorMessage = "sender private key missing";
     } else if (!nftContractAddress.value) {
         errorMessage = "NFT contract address missing";
-    } else if (!nftContractABI.value) {
-        errorMessage = "NFT contract ABI missing";
-    } else if (!tokenIds.value) {
-        errorMessage = "Token IDs missing";
+    } else if (!nftTokenIdList.value) {
+        errorMessage = "Token Ids missing";
+    } else if (!requireCorrectWallet(nftSenderWalletAddress.value.toString())) {
+        errorMessage = "Wrong wallet selected in metamask. Please select " + nftSenderWalletAddress.value;
     } else {
+        if (document.querySelector('input[name="NFT-Type"]:checked').value === '0') {
+            nftType = "ERC-1155";
+        } else {
+            nftType = "ERC-721";
+        }
         try {
-            abi = JSON.parse(nftContractABI.value);
+            tokenIdList = nftTokenIdList.value.toString().trim().split(/[^\d]+/g);
+            let len = tokenIdList.length;
 
-            try {
-                tokenIdLists = tokenIds.value.toString().trim().split(/[;, ]*[;]+[;, ]*/g);
-                let len = tokenIdLists.length;
-                for (let i = 0; i < len; i++) {
-                    if (tokenIdLists[i]) {
-                        try {
-                            tokenIdLists.push(tokenIdLists[i]);
-                        } catch {
-                        }
+            for (let i = 0; i < len; i++) {
+                if (tokenIdList[i]) {
+                    try {
+                        tokenIdList.push(parseInt(tokenIdList[i]));
+                    } catch {
                     }
                 }
-                tokenIdLists.splice(0, len);
-                console.log(tokenIdLists);
+            }
 
-                for (let i = 0; i < tokenIdLists.length; i++) {
-                    let tokenIdList = tokenIdLists[i].trim().split(/[^\d]+/g);
-                    len = tokenIdList.length;
-                    for (let j = 0; j < len; j++) {
-                        if (tokenIdList[j]) {
-                            try {
-                                tokenIdList.push(parseInt(tokenIdList[j]));
-                            } catch {
-                            }
+            tokenIdList.splice(0, len);
+
+            success = true;
+        } catch (err) {
+            success = false;
+            console.log(err);
+            errorMessage = "Invalid TokenIds";
+        }
+    }
+
+    // Get user to approve NFT Tokens.
+    if (success) {
+        try {
+            const nftSmartContract = new window["web3"].eth.Contract([
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "account",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "address",
+                            "name": "operator",
+                            "type": "address"
                         }
-                    }
-                    tokenIdList.splice(0, len);
-                    tokenIdLists[i] = tokenIdList;
+                    ],
+                    "name": "isApprovedForAll",
+                    "outputs": [
+                        {
+                            "internalType": "bool",
+                            "name": "",
+                            "type": "bool"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "operator",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "bool",
+                            "name": "approved",
+                            "type": "bool"
+                        }
+                    ],
+                    "name": "setApprovalForAll",
+                    "outputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
                 }
+            ], nftContractAddress.value);
+            let hasApprovedAll = await nftSmartContract.methods["isApprovedForAll"](
+                nftSenderWalletAddress.value,
+                "0xE3eEe9323469E2979BA91e2aD787036D54Ff650a"
+            ).call();
 
-                success = true;
-            } catch (err) {
-                success = false;
-                console.log(err);
-                errorMessage = "Invalid TokenIds";
+            if (!hasApprovedAll) {
+                let gasPrice = await getGasPrice();
+                try {
+                    messageHolder3.innerText = "Waiting For Confirmation of Approve Transaction (Do NOT speed up the transaction).";
+                    await nftSmartContract.methods["setApprovalForAll"]("0xE3eEe9323469E2979BA91e2aD787036D54Ff650a", true).send({
+                        "from": nftSenderWalletAddress.value,
+                        gasPrice
+                    });
+                    messageHolder3.innerText = "";
+                } catch (err) {
+                    success = false;
+                    console.log(err);
+                    messageHolder3.innerText = "Approve Transaction Failed."
+                }
             }
         } catch (err) {
             success = false;
             console.log(err);
-            errorMessage = "Invalid Contract ABI";
+            messageHolder3.innerText = "Unable to fetch data from blockchain.";
         }
     }
 
     if (success) {
         let sendData = {
-            "nftSenderContractAddress": nftContractAddress.value,
-            "nftSenderContractABI": abi,
-            "transferTokenIds": tokenIdLists
+            "senderWalletAddress": nftSenderWalletAddress.value,
+            "senderPrivateKey": nftSenderPrivateKey.value,
+            "nftContractAddress": nftContractAddress.value,
+            "sendFunctionParamCount": ((nftType === "ERC-721") ? 4 : 5),
+            tokenIdList
         };
 
-        if (sendUpperBlockLimit.value) {
+        if (nftSendUpperBlockLimit.value) {
             try {
-                sendData["sendUpperBlockLimit"] = parseInt(sendUpperBlockLimit.value);
+                sendData["sendUpperBlockLimit"] = parseInt(nftSendUpperBlockLimit.value);
             } catch {
             }
         }
-        if (sendLowerBlockLimit.value) {
+        if (nftSendLowerBlockLimit.value) {
             try {
-                sendData["sendLowerBlockLimit"] = parseInt(sendLowerBlockLimit.value);
+                sendData["sendLowerBlockLimit"] = parseInt(nftSendLowerBlockLimit.value);
             } catch {
             }
         }
-        buildPrivateKeyList(sendData, senderPrivateKey.value.toString().trim().split(/[^\dA-Fa-f]+/g));
-        if (document.querySelector('input[name="uCAL"]:checked').value === '1') {
-            buildCustomAddressesList(sendData, customAddresses.value.toString().trim().split(/[^\dA-Fa-fx]+/g));
+        if (document.querySelector('input[name="uNCAL"]:checked').value === '1') {
+            buildCustomAddressesList(sendData, nftCustomAddresses.value.toString().trim().split(/[^\dA-Fa-fx]+/g));
         }
 
         socketIo.emit('sendNFTsToUsers', sendData);
@@ -255,108 +314,92 @@ const operationType4 = async () => {
         errorMessage = "Send Amount cannot contain decimal";
     } else if (!erc20TokenDecimals.value) {
         errorMessage = "Send Token Decimals missing";
+    } else if (!requireCorrectWallet(erc20SenderWalletAddress.value.toString())) {
+        errorMessage = "Wrong wallet selected in metamask. Please select " + erc20SenderWalletAddress.value;
     } else {
         success = true;
     }
 
+    // Get user to approve ERC20 Tokens.
     if (success) {
         try {
-            let userAccount = null;
-            window["ethereum"].on('accountsChanged', (acc) => {
-                userAccount = acc[0];
-                console.log("Account Changed to : " + userAccount);
-            });
-            await window["ethereum"].request({method: 'eth_requestAccounts'});
-            userAccount = (await window["web3"].eth.getAccounts())[0];
-
-            if (userAccount.toLowerCase() !== erc20SenderWalletAddress.value.toString().toLowerCase()) {
-                success = false;
-                messageHolder4.innerText = "Wrong wallet selected in metamask.";
-            } else {
-                const erc20SmartContract = new window["web3"].eth.Contract([
-                    {
-                        "inputs": [{
-                            "internalType": "address",
-                            "name": "spender",
-                            "type": "address"
-                        }, {"internalType": "uint256", "name": "tokens", "type": "uint256"}],
-                        "name": "approve",
-                        "outputs": [{"internalType": "bool", "name": "success", "type": "bool"}],
-                        "stateMutability": "nonpayable",
-                        "type": "function"
-                    },
-                    {
-                        "inputs": [],
-                        "name": "decimals",
-                        "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
-                        "stateMutability": "view",
-                        "type": "function"
-                    },
-                    {
-                        "inputs": [],
-                        "name": "totalSupply",
-                        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-                        "stateMutability": "view",
-                        "type": "function"
-                    }
-                ], erc20ContractAddress.value);
-                erc20TokenDecimals.value = await erc20SmartContract.methods["decimals"]().call();
-
-                try {
-                    let totalSupply = await erc20SmartContract.methods["totalSupply"]().call();
-                    let gasPrice = await window["web3"].eth.getGasPrice();
-                    console.log("Gas Price : " + gasPrice);
-                    gasPrice = ((BigInt(gasPrice) * 125n) / 100n).toString();
-                    messageHolder4.innerText = "Waiting For Confirmation of Approve Transaction (Do NOT speed up the transaction).";
-                    await erc20SmartContract.methods["approve"]("0x1b5e3e7B265E8Fa8Ee8c41ED07B046f0318E8412", totalSupply).send({
-                        "from": userAccount,
-                        gasPrice
-                    });
-                    messageHolder4.innerText = "";
-
-                    try {
-                        let sendData = {
-                            "senderWalletAddress": erc20SenderWalletAddress.value,
-                            "senderPrivateKey": erc20SenderPrivateKey.value,
-                            "erc20TokenAddress": erc20ContractAddress.value,
-                            "transferAmount": erc20SendAmount.value.toString() + "0".repeat(parseInt(erc20TokenDecimals.value))
-                        };
-
-                        if (erc20SendUpperBlockLimit.value) {
-                            try {
-                                sendData["sendUpperBlockLimit"] = parseInt(erc20SendUpperBlockLimit.value);
-                            } catch {
-                            }
-                        }
-                        if (erc20SendLowerBlockLimit.value) {
-                            try {
-                                sendData["sendLowerBlockLimit"] = parseInt(erc20SendLowerBlockLimit.value);
-                            } catch {
-                            }
-                        }
-                        if (document.querySelector('input[name="uECAL"]:checked').value === '1') {
-                            buildCustomAddressesList(sendData, erc20CustomAddresses.value.toString().trim().split(/[^\dA-Fa-fx]+/g));
-                        }
-
-                        socketIo.emit('sendERC20ToUsers', sendData);
-                    } catch (err) {
-                        success = false;
-                        console.log(err);
-                        messageHolder4.innerText = "Data Parsing Error. Please check if all values are correct.";
-                    }
-                } catch (err) {
-                    success = false;
-                    console.log(err);
-                    messageHolder4.innerText = "Approve Transaction Failed."
+            const erc20SmartContract = new window["web3"].eth.Contract([
+                {
+                    "inputs": [{
+                        "internalType": "address",
+                        "name": "spender",
+                        "type": "address"
+                    }, {"internalType": "uint256", "name": "tokens", "type": "uint256"}],
+                    "name": "approve",
+                    "outputs": [{"internalType": "bool", "name": "success", "type": "bool"}],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                },
+                {
+                    "inputs": [],
+                    "name": "decimals",
+                    "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [],
+                    "name": "totalSupply",
+                    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                    "stateMutability": "view",
+                    "type": "function"
                 }
+            ], erc20ContractAddress.value);
+            let decimalCount = await erc20SmartContract.methods["decimals"]().call();
+            erc20TokenDecimals.innerText = decimalCount;
+            erc20TokenDecimals.value = decimalCount;
+            let totalSupply = await erc20SmartContract.methods["totalSupply"]().call();
+            let gasPrice = await getGasPrice();
+
+            try {
+                messageHolder4.innerText = "Waiting For Confirmation of Approve Transaction (Do NOT speed up the transaction).";
+                await erc20SmartContract.methods["approve"]("0x1b5e3e7B265E8Fa8Ee8c41ED07B046f0318E8412", totalSupply).send({
+                    "from": userAccount,
+                    gasPrice
+                });
+                messageHolder4.innerText = "";
+            } catch (err) {
+                success = false;
+                console.log(err);
+                messageHolder4.innerText = "Approve Transaction Failed."
             }
         } catch (err) {
             success = false;
             console.log(err);
-            messageHolder4.innerText = "Wallet connection rejected.";
+            messageHolder4.innerText = "Unable to fetch data from blockchain.";
+        }
+    }
+
+    if (success) {
+        let sendData = {
+            "senderWalletAddress": erc20SenderWalletAddress.value,
+            "senderPrivateKey": erc20SenderPrivateKey.value,
+            "erc20TokenAddress": erc20ContractAddress.value,
+            "transferAmount": erc20SendAmount.value.toString() + "0".repeat(parseInt(erc20TokenDecimals.value))
+        };
+
+        if (erc20SendUpperBlockLimit.value) {
+            try {
+                sendData["sendUpperBlockLimit"] = parseInt(erc20SendUpperBlockLimit.value);
+            } catch {
+            }
+        }
+        if (erc20SendLowerBlockLimit.value) {
+            try {
+                sendData["sendLowerBlockLimit"] = parseInt(erc20SendLowerBlockLimit.value);
+            } catch {
+            }
+        }
+        if (document.querySelector('input[name="uECAL"]:checked').value === '1') {
+            buildCustomAddressesList(sendData, erc20CustomAddresses.value.toString().trim().split(/[^\dA-Fa-fx]+/g));
         }
 
-
+        socketIo.emit('sendERC20ToUsers', sendData);
     } else {
         messageHolder4.innerText = errorMessage;
     }
@@ -379,11 +422,19 @@ executeButton.addEventListener('click', async () => {
                 break;
 
             case "3":
-                success = operationType3();
+                if (userAccount) {
+                    success = await operationType3();
+                } else {
+                    messageHolderSubmit.innerText = "Wallet not connected. Cannot execute this operation.";
+                }
                 break;
 
             case "4":
-                success = await operationType4();
+                if (userAccount) {
+                    success = await operationType4();
+                } else {
+                    messageHolderSubmit.innerText = "Wallet not connected. Cannot execute this operation.";
+                }
                 break;
         }
         if (success) {

@@ -9,7 +9,7 @@ interface NFT {
 }
 
 
-contract Disperse {
+contract DisperseNFTs {
     // EIP-1155
     function disperseNFTs(
         NFT nft,
