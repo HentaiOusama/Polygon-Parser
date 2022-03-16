@@ -336,17 +336,22 @@ const sendTransactionToBlockchain = async (baseTransaction, senderPK, smartContr
         let execFunction = smartContract.methods[functionName];
         baseTransaction["data"] = (typeof params === "object") ? execFunction(...params).encodeABI() : execFunction(params).encodeABI();
         let signedTransaction = await web3.eth.accounts.signTransaction(baseTransaction, senderPK);
+        let trxStartTime = Date.now();
+        console.log("Dispatched a pending transaction with hash: " + signedTransaction.transactionHash + " to blockchain. Awaiting confirmation.");
         let transactionReceipt = await web3.eth.sendSignedTransaction(signedTransaction.rawTransaction);
         if (transactionReceipt.status) {
+            let trxEndTime = Date.now();
+            console.log(sendItemName + " batch transfer complete in " + (trxEndTime - trxStartTime) +
+                " ms. Trx. Hash : " + transactionReceipt.transactionHash + ", ");
             consecutiveFailure = 0;
         } else {
+            console.log("Trx. Error : ");
             consecutiveFailure += 1;
             console.log(transactionReceipt);
         }
         returnResult = transactionReceipt.status;
-        console.log(sendItemName + " batch transfer complete. Trx. Hash : " + transactionReceipt.transactionHash);
     } catch (err) {
-        console.log("Error when sending " + sendItemName);
+        console.log("Error when sending " + sendItemName + ". Trx. failed.");
         console.log(err);
         consecutiveFailure += 1;
         returnResult = false;
@@ -392,11 +397,13 @@ const runSendNFTFunction = async (initParams) => {
         customAddressMode = initParams["useCustomAddressList"] && initParams["customAddressList"];
     if (customAddressMode) {
         documentWithUnsentNFT = buildCursorFromList(initParams["customAddressList"]);
+        console.log("Detected custom address list. Using custom address list instead of database.");
     } else {
         documentWithUnsentNFT = await userCollection
             .find(findDocument)
             .sort({"latestBlockNumber": -1})
             .allowDiskUse();
+        console.log("Fetching data from database.");
     }
 
     let sendFunctionParamCount = initParams["sendFunctionParamCount"];
@@ -420,6 +427,8 @@ const runSendNFTFunction = async (initParams) => {
                         hasMoreTokenIdsToSend = false;
                     }
                     continue;
+                } else {
+                    console.log("Generated current list of users " + ((customAddressMode) ? "." : " from addresses in database."));
                 }
             } else if (recipientAddresses.length === 0) {
                 break;
@@ -458,9 +467,11 @@ const runSendNFTFunction = async (initParams) => {
             nftSenderContract, configData["sendNFTFunctionName"][sendFunctionParamCount], contractParams, "NFT", 3);
 
         if (success && !customAddressMode) {
+            console.log("Updating database.");
             for (let address of recipientAddresses) {
                 await userCollection.updateOne({"effectiveAddress": address}, {"$set": {"hasSentNFT": true}});
             }
+            console.log("Database Updated.");
         }
         if (testMode) {
             break;
@@ -499,11 +510,13 @@ const runSendERC20Function = async (initParams) => {
         customAddressMode = initParams["useCustomAddressList"] && initParams["customAddressList"];
     if (customAddressMode) {
         documentWithUnsentERC20 = buildCursorFromList(initParams["customAddressList"]);
+        console.log("Detected custom address list. Using custom address list instead of database.");
     } else {
         documentWithUnsentERC20 = await userCollection
             .find(findDocument)
             .sort({"latestBlockNumber": -1})
             .allowDiskUse();
+        console.log("Fetching data from database.");
     }
 
     let recipientAddresses = [];
@@ -517,6 +530,8 @@ const runSendERC20Function = async (initParams) => {
                     recipientAddresses.push(currentDocument["effectiveAddress"]);
                 }
                 continue;
+            } else {
+                console.log("Generated current list of users " + ((customAddressMode) ? "." : " from addresses in database."));
             }
         } else if (recipientAddresses.length === 0) {
             console.log("Operation Complete.");
@@ -531,9 +546,11 @@ const runSendERC20Function = async (initParams) => {
             erc20SenderContract, configData["sendERC20FunctionName"], contractParams, "ERC20", 3);
 
         if (success && !customAddressMode) {
+            console.log("Updating database.");
             for (let address of recipientAddresses) {
                 await userCollection.updateOne({"effectiveAddress": address}, {"$set": {"hasSentERC20": true}});
             }
+            console.log("Database Updated.");
         }
         if (testMode) {
             break;
@@ -549,9 +566,11 @@ io.on('connection', (socket) => {
     });
 
     socket.on('fetchPolygonNFTUsers', async (blockData) => {
+        console.log("Server received request for parsing blockchain.");
         if (isExecutingOperation) {
             socket.emit('alreadyExecutingOperation');
         } else {
+            console.log("Request Acknowledged");
             isExecutingOperation = true;
             try {
                 await runFetchDataFunction(blockData["upperBlockLimit"], blockData["lowerBlockLimit"]);
@@ -591,9 +610,11 @@ io.on('connection', (socket) => {
     });
 
     socket.on('sendNFTsToUsers', async (data) => {
+        console.log("Server received request for sending NFTs");
         if (isExecutingOperation) {
             socket.emit('alreadyExecutingOperation');
         } else {
+            console.log("Request Acknowledged");
             isExecutingOperation = true;
             try {
                 await delay(7000);
@@ -615,9 +636,11 @@ io.on('connection', (socket) => {
     });
 
     socket.on('sendERC20ToUsers', async (data) => {
+        console.log("Server received request for sending ERC20s");
         if (isExecutingOperation) {
             socket.emit('alreadyExecutingOperation');
         } else {
+            console.log("Request Acknowledged");
             isExecutingOperation = true;
             try {
                 await delay(7000);
