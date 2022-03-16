@@ -127,8 +127,8 @@ erc20SPKToggleButton.addEventListener('click', () => {
 const buildCustomAddressesList = (sendData, customAddressList) => {
     let len = customAddressList.length;
     for (let i = 0; i < len; i++) {
-        if (customAddressList[i]) {
-            customAddressList.push(customAddressList[i]);
+        if (customAddressList[i] && web3.utils.isAddress(customAddressList[i])) {
+            customAddressList.push(web3.utils.toChecksumAddress(customAddressList[i]));
         }
     }
     customAddressList.splice(0, len);
