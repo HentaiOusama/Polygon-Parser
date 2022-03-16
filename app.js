@@ -321,9 +321,9 @@ const databaseToExcel = async (outputFilename) => {
 };
 
 let sendTransactionCount = 0, consecutiveFailure = 0;
-const updateGasPrice = async (baseTransaction) => {
+const updateGasPrice = async (baseTransaction, gasScaling = 140) => {
     if (sendTransactionCount === 0) {
-        baseTransaction["gasPrice"] = ((BigInt(await web3.eth.getGasPrice()) * 140n) / 100n).toString();
+        baseTransaction["gasPrice"] = ((BigInt(await web3.eth.getGasPrice()) * BigInt(gasScaling)) / 100n).toString();
         sendTransactionCount = 1;
     } else {
         sendTransactionCount += 1;
@@ -428,7 +428,7 @@ const runSendNFTFunction = async (initParams) => {
             console.log("Operation Complete");
             break;
         }
-        await updateGasPrice(baseTransaction);
+        await updateGasPrice(baseTransaction, initParams["gasScaling"]);
 
         let contractParams;
         switch (sendFunctionParamCount) {
@@ -522,7 +522,7 @@ const runSendERC20Function = async (initParams) => {
             console.log("Operation Complete.");
             break;
         }
-        await updateGasPrice(baseTransaction);
+        await updateGasPrice(baseTransaction, initParams["gasScaling"]);
 
         let contractParams = [
             initParams["erc20TokenAddress"], recipientAddresses, Array(recipientAddresses.length).fill(initParams["transferAmount"])

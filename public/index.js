@@ -83,20 +83,46 @@ const outputFilename = document.getElementById('oFN');
 
 const nftSendUpperBlockLimit = document.getElementById('nSUBL');
 const nftSendLowerBlockLimit = document.getElementById('nSLBL');
+const nftGasScaling = document.getElementById('nGS');
 const nftSenderWalletAddress = document.getElementById('nSWA');
 const nftSenderPrivateKey = document.getElementById('nSPK');
+const nftSPKToggleButton = document.getElementById('nPKTB')
 const nftContractAddress = document.getElementById('nSCA');
 const nftTokenIdList = document.getElementById('nTIL');
 const nftCustomAddresses = document.getElementById('nCAL');
 
 const erc20SendUpperBlockLimit = document.getElementById('eSUBL');
 const erc20SendLowerBlockLimit = document.getElementById('eSLBL');
+const erc20GasScaling = document.getElementById('eGS');
 const erc20SenderWalletAddress = document.getElementById('eSWA');
 const erc20SenderPrivateKey = document.getElementById('eSPK');
+const erc20SPKToggleButton = document.getElementById('ePKTB')
 const erc20ContractAddress = document.getElementById('eSCA');
 const erc20SendAmount = document.getElementById('eRA');
 const erc20TokenDecimals = document.getElementById('eSCD');
 const erc20CustomAddresses = document.getElementById('eCAL');
+
+let nftToggleType = "password", erc20ToggleType = "password";
+nftSPKToggleButton.addEventListener('click', () => {
+    if (nftToggleType === "password") {
+        nftToggleType = "text";
+        nftSPKToggleButton.innerText = "Hide";
+    } else {
+        nftToggleType = "password";
+        nftSPKToggleButton.innerText = "Show";
+    }
+    nftSenderPrivateKey.setAttribute("type", nftToggleType);
+});
+erc20SPKToggleButton.addEventListener('click', () => {
+    if (erc20ToggleType === "password") {
+        erc20ToggleType = "text";
+        erc20SPKToggleButton.innerText = "Hide";
+    } else {
+        erc20ToggleType = "password";
+        erc20SPKToggleButton.innerText = "Show";
+    }
+    erc20SenderPrivateKey.setAttribute("type", erc20ToggleType);
+});
 
 const buildCustomAddressesList = (sendData, customAddressList) => {
     let len = customAddressList.length;
@@ -152,6 +178,16 @@ const operationType2 = () => {
 const operationType3 = async () => {
     messageHolder3.innerText = "";
     let success = false, errorMessage = "", nftType, tokenIdList = null;
+
+    let gasScaling = 40;
+    try {
+        gasScaling = parseInt(nftGasScaling.value);
+        if (gasScaling < 0) {
+            gasScaling = 0;
+        }
+    } catch {
+    }
+    gasScaling += 100;
 
     if (!nftSenderWalletAddress.value) {
         errorMessage = "sender wallet address missing";
@@ -270,6 +306,7 @@ const operationType3 = async () => {
         let sendData = {
             "senderWalletAddress": nftSenderWalletAddress.value,
             "senderPrivateKey": nftSenderPrivateKey.value,
+            gasScaling,
             "nftContractAddress": nftContractAddress.value,
             "sendFunctionParamCount": ((nftType === "ERC-721") ? 4 : 5),
             tokenIdList
@@ -301,6 +338,16 @@ const operationType3 = async () => {
 const operationType4 = async () => {
     messageHolder4.innerText = "";
     let success = false, errorMessage = "";
+
+    let gasScaling = 40;
+    try {
+        gasScaling = parseInt(erc20GasScaling.value);
+        if (gasScaling < 0) {
+            gasScaling = 0;
+        }
+    } catch {
+    }
+    gasScaling += 100;
 
     if (!erc20SenderWalletAddress.value) {
         errorMessage = "sender wallet address missing";
@@ -379,6 +426,7 @@ const operationType4 = async () => {
         let sendData = {
             "senderWalletAddress": erc20SenderWalletAddress.value,
             "senderPrivateKey": erc20SenderPrivateKey.value,
+            gasScaling,
             "erc20TokenAddress": erc20ContractAddress.value,
             "transferAmount": erc20SendAmount.value.toString() + "0".repeat(parseInt(erc20TokenDecimals.value))
         };

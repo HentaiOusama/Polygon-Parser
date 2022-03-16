@@ -74,12 +74,15 @@
             3. Send NFT to wallets in database: -
         </div>
         <div class="subBlock">
-            <div class="wrapper" style="height: 450px; flex: 4 0 0; border-right: 1px solid black;">
+            <div class="wrapper" style="height: 500px; flex: 4 0 0; border-right: 1px solid black;">
                 <div class="subElementHolderLeft">
                     <label for="nSUBL">Upper Block Limit :</label>
                 </div>
                 <div class="subElementHolderLeft">
                     <label for="nSLBL">Lower Block Limit :</label>
+                </div>
+                <div class="subElementHolderLeft">
+                    <label for="nGS">Additional Gas Price Scaling (%) :</label>
                 </div>
                 <div class="subElementHolderLeft">
                     <label for="nSWA">Wallet that holds and will send the NFTs :</label>
@@ -103,7 +106,7 @@
                     <label for="nCAL">Custom Address List :</label>
                 </div>
             </div>
-            <div class="wrapper" style="height: 450px; flex: 6 0 0;">
+            <div class="wrapper" style="height: 500px; flex: 6 0 0;">
                 <div class="subElementHolderRight">
                     <input type="number" id="nSUBL" placeholder="Upper Block Limit of Users (Optional)">
                 </div>
@@ -111,10 +114,17 @@
                     <input type="number" id="nSLBL" placeholder="Lower Block Limit of Users (Optional)">
                 </div>
                 <div class="subElementHolderRight">
+                    <input type="number" id="nGS" placeholder="Percentage gas scaling for sending transactions"
+                           value="40">
+                </div>
+                <div class="subElementHolderRight">
                     <input type="text" id="nSWA" placeholder="Holder / Sender Wallet Address" autocomplete="none">
                 </div>
                 <div class="subElementHolderRight">
-                    <input type="password" id="nSPK" placeholder="Sender Wallet Private Key">
+                    <input type="password" id="nSPK" placeholder="Sender Wallet Private Key" style="width: 88%;">
+                    <button id="nPKTB" style="height: 65%; width: 7%; border-radius: 5px;">
+                        Show
+                    </button>
                 </div>
                 <div class="subElementHolderRight">
                     <input type="text" id="nSCA" placeholder="NFT Smart Contract Address" autocomplete="none">
@@ -164,12 +174,15 @@
             4. Send ERC20 Tokens to wallets in database: -
         </div>
         <div class="subBlock">
-            <div class="wrapper" style="height: 450px; flex: 4 0 0; border-right: 1px solid black;">
+            <div class="wrapper" style="height: 500px; flex: 4 0 0; border-right: 1px solid black;">
                 <div class="subElementHolderLeft">
                     <label for="eSUBL">Upper Block Limit :</label>
                 </div>
                 <div class="subElementHolderLeft">
                     <label for="eSLBL">Lower Block Limit :</label>
+                </div>
+                <div class="subElementHolderLeft">
+                    <label for="eGS">Additional Gas Price Scaling (%) :</label>
                 </div>
                 <div class="subElementHolderLeft">
                     <label for="eSWA">Wallet that holds and will send the ERC20 Tokens :</label>
@@ -193,7 +206,7 @@
                     <label for="eCAL">Custom Address List :</label>
                 </div>
             </div>
-            <div class="wrapper" style="height: 450px; flex: 6 0 0;">
+            <div class="wrapper" style="height: 500px; flex: 6 0 0;">
                 <div class="subElementHolderRight">
                     <input type="number" id="eSUBL" placeholder="Upper Block Limit of Users (Optional)">
                 </div>
@@ -201,10 +214,17 @@
                     <input type="number" id="eSLBL" placeholder="Lower Block Limit of Users (Optional)">
                 </div>
                 <div class="subElementHolderRight">
+                    <input type="number" id="eGS" placeholder="Percentage gas scaling for sending transactions"
+                           value="40">
+                </div>
+                <div class="subElementHolderRight">
                     <input type="text" id="eSWA" placeholder="Holder / Sender Wallet Address" autocomplete="none">
                 </div>
                 <div class="subElementHolderRight">
-                    <input type="password" id="eSPK" placeholder="Sender Wallet Private Key">
+                    <input type="password" id="eSPK" placeholder="Sender Wallet Private Key" style="width: 88%;">
+                    <button id="ePKTB" style="height: 65%; width: 7%; border-radius: 5px;">
+                        Show
+                    </button>
                 </div>
                 <div class="subElementHolderRight">
                     <input type="text" id="eSCA" placeholder="ERC20 Token Smart Contract Address" autocomplete="none">
