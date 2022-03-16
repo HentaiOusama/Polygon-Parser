@@ -342,7 +342,7 @@ const sendTransactionToBlockchain = async (baseTransaction, senderPK, smartContr
         if (transactionReceipt.status) {
             let trxEndTime = Date.now();
             console.log(sendItemName + " batch transfer complete in " + (trxEndTime - trxStartTime) +
-                " ms. Trx. Hash : " + transactionReceipt.transactionHash + ", ");
+                " ms. Trx. Hash : " + transactionReceipt.transactionHash + ".");
             consecutiveFailure = 0;
         } else {
             console.log("Trx. Error : ");
