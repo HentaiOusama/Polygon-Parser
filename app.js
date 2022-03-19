@@ -428,7 +428,10 @@ const runSendNFTFunction = async (initParams) => {
                     }
                     continue;
                 } else {
-                    console.log("Generated current list of users " + ((customAddressMode) ? "." : " from addresses in database."));
+                    console.log("Generated current list of users" + ((customAddressMode) ? "." : " from addresses in database."));
+                    console.log("Starting Address: " + recipientAddresses[0] +
+                        ", Ending Address: " + recipientAddresses[recipientAddresses.length - 1] +
+                        ", Batch Size: " + recipientAddresses.length);
                 }
             } else if (recipientAddresses.length === 0) {
                 break;
@@ -531,7 +534,10 @@ const runSendERC20Function = async (initParams) => {
                 }
                 continue;
             } else {
-                console.log("Generated current list of users " + ((customAddressMode) ? "." : " from addresses in database."));
+                console.log("Generated current list of users" + ((customAddressMode) ? "." : " from addresses in database."));
+                console.log("Starting Address: " + recipientAddresses[0] +
+                    ", Ending Address: " + recipientAddresses[recipientAddresses.length - 1] +
+                    ", Batch Size: " + recipientAddresses.length);
             }
         } else if (recipientAddresses.length === 0) {
             console.log("Operation Complete.");

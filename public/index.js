@@ -1,4 +1,38 @@
+"use strict";
+
 const socketIo = window["socketIo"](window.location.origin);
+
+class CookieService {
+    getCookie = (cookieName) => {
+        let ca = document.cookie.split(';');
+        let caLen = ca.length;
+        cookieName = "".concat(cookieName, "=");
+        let c;
+        for (let i = 0; i < caLen; i += 1) {
+            c = ca[i].replace(/^\s+/g, '');
+            if (c.indexOf(cookieName) === 0) {
+                return c.substring(cookieName.length, c.length);
+            }
+        }
+        return null;
+    };
+
+    setCookie = (params) => {
+        let d = new Date();
+        d.setTime(d.getTime() + (params.expireDays ? params.expireDays : 1) * 24 * 60 * 60 * 1000);
+        document.cookie =
+            (params.name ? params.name : '') + "=" + (params.value ? params.value : '') + ";"
+            + (params.session && params.session === true ? "" : "expires=" + d.toUTCString() + ";")
+            + "path=" + (params.path && params.path.length > 0 ? params.path : "/") + ";"
+            + (location.protocol === 'https:' && params.secure ? "secure" : "");
+    };
+
+    deleteCookie = (cookieName) => {
+        this.setCookie({name: cookieName, value: '', expireDays: -1});
+    };
+}
+
+let cookieService = new CookieService();
 
 const versionHolder = document.getElementById("cSVH");
 socketIo.emit('getSoftwareVersion');
@@ -76,6 +110,8 @@ socketIo.on('alreadyExecutingOperation', () => {
     messageHolderSubmit.innerText = "An operation is already being executed. Please wait for it to finish.";
 });
 
+let cookieValue;
+
 const upperBlockLimit = document.getElementById('uBL');
 const lowerBlockLimit = document.getElementById('lBL');
 
@@ -86,10 +122,43 @@ const nftSendLowerBlockLimit = document.getElementById('nSLBL');
 const nftGasScaling = document.getElementById('nGS');
 const nftSenderWalletAddress = document.getElementById('nSWA');
 const nftSenderPrivateKey = document.getElementById('nSPK');
-const nftSPKToggleButton = document.getElementById('nPKTB')
+const nftSPKToggleButton = document.getElementById('nPKTB');
 const nftContractAddress = document.getElementById('nSCA');
 const nftTokenIdList = document.getElementById('nTIL');
 const nftCustomAddresses = document.getElementById('nCAL');
+
+cookieValue = cookieService.getCookie("nSUBL");
+if (cookieValue) {
+    nftSendUpperBlockLimit.value = cookieValue;
+}
+cookieValue = cookieService.getCookie("nSLBL");
+if (cookieValue) {
+    nftSendLowerBlockLimit.value = cookieValue;
+}
+cookieValue = cookieService.getCookie("nGS");
+if (cookieValue) {
+    nftGasScaling.value = cookieValue;
+}
+cookieValue = cookieService.getCookie("nSWA");
+if (cookieValue) {
+    nftSenderWalletAddress.value = cookieValue;
+}
+cookieValue = cookieService.getCookie("nSPK");
+if (cookieValue) {
+    nftSenderPrivateKey.value = cookieValue;
+}
+cookieValue = cookieService.getCookie("nSCA");
+if (cookieValue) {
+    nftContractAddress.value = cookieValue;
+}
+cookieValue = cookieService.getCookie("nTIL");
+if (cookieValue) {
+    nftTokenIdList.value = cookieValue;
+}
+cookieValue = window.localStorage.getItem("nCAL");
+if (cookieValue) {
+    nftCustomAddresses.value = cookieValue;
+}
 
 const erc20SendUpperBlockLimit = document.getElementById('eSUBL');
 const erc20SendLowerBlockLimit = document.getElementById('eSLBL');
@@ -101,6 +170,35 @@ const erc20ContractAddress = document.getElementById('eSCA');
 const erc20SendAmount = document.getElementById('eRA');
 const erc20TokenDecimals = document.getElementById('eSCD');
 const erc20CustomAddresses = document.getElementById('eCAL');
+
+cookieValue = cookieService.getCookie("eSUBL");
+if (cookieValue) {
+    erc20SendUpperBlockLimit.value = cookieValue;
+}
+cookieValue = cookieService.getCookie("eSLBL");
+if (cookieValue) {
+    erc20SendLowerBlockLimit.value = cookieValue;
+}
+cookieValue = cookieService.getCookie("eGS");
+if (cookieValue) {
+    erc20GasScaling.value = cookieValue;
+}
+cookieValue = cookieService.getCookie("eSWA");
+if (cookieValue) {
+    erc20SenderWalletAddress.value = cookieValue;
+}
+cookieValue = cookieService.getCookie("eSPK");
+if (cookieValue) {
+    erc20SenderPrivateKey.value = cookieValue;
+}
+cookieValue = cookieService.getCookie("eSCA");
+if (cookieValue) {
+    erc20ContractAddress.value = cookieValue;
+}
+cookieValue = window.localStorage.getItem("eCAL");
+if (cookieValue) {
+    erc20CustomAddresses.value = cookieValue;
+}
 
 let nftToggleType = "password", erc20ToggleType = "password";
 nftSPKToggleButton.addEventListener('click', () => {
@@ -328,6 +426,43 @@ const operationType3 = async () => {
             buildCustomAddressesList(sendData, nftCustomAddresses.value.toString().trim().split(/[^\dA-Fa-fx]+/g));
         }
 
+        cookieService.setCookie({
+            "name": "nSUBL",
+            "value": nftSendUpperBlockLimit.value,
+            "expiryDays": 365
+        });
+        cookieService.setCookie({
+            "name": "nSLBL",
+            "value": nftSendLowerBlockLimit.value,
+            "expiryDays": 365
+        });
+        cookieService.setCookie({
+            "name": "nGS",
+            "value": nftGasScaling.value,
+            "expiryDays": 365
+        });
+        cookieService.setCookie({
+            "name": "nSWA",
+            "value": nftSenderWalletAddress.value,
+            "expiryDays": 365
+        });
+        cookieService.setCookie({
+            "name": "nSPK",
+            "value": nftSenderPrivateKey.value,
+            "expiryDays": 365
+        });
+        cookieService.setCookie({
+            "name": "nSCA",
+            "value": nftContractAddress.value,
+            "expiryDays": 365
+        });
+        cookieService.setCookie({
+            "name": "nTIL",
+            "value": nftTokenIdList.value,
+            "expiryDays": 365
+        });
+        window.localStorage.setItem("nCAL", nftCustomAddresses.value);
+
         socketIo.emit('sendNFTsToUsers', sendData);
     } else {
         messageHolder3.innerText = errorMessage;
@@ -446,6 +581,38 @@ const operationType4 = async () => {
         if (document.querySelector('input[name="uECAL"]:checked').value === '1') {
             buildCustomAddressesList(sendData, erc20CustomAddresses.value.toString().trim().split(/[^\dA-Fa-fx]+/g));
         }
+
+        cookieService.setCookie({
+            "name": "eSUBL",
+            "value": erc20SendUpperBlockLimit.value,
+            "expiryDays": 365
+        });
+        cookieService.setCookie({
+            "name": "eSLBL",
+            "value": erc20SendLowerBlockLimit.value,
+            "expiryDays": 365
+        });
+        cookieService.setCookie({
+            "name": "eGS",
+            "value": erc20GasScaling.value,
+            "expiryDays": 365
+        });
+        cookieService.setCookie({
+            "name": "eSWA",
+            "value": erc20SenderWalletAddress.value,
+            "expiryDays": 365
+        });
+        cookieService.setCookie({
+            "name": "eSPK",
+            "value": erc20SenderPrivateKey.value,
+            "expiryDays": 365
+        });
+        cookieService.setCookie({
+            "name": "eSCA",
+            "value": erc20ContractAddress.value,
+            "expiryDays": 365
+        });
+        window.localStorage.setItem("eCAL", erc20CustomAddresses.value);
 
         socketIo.emit('sendERC20ToUsers', sendData);
     } else {
