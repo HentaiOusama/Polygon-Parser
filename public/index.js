@@ -117,6 +117,7 @@ const lowerBlockLimit = document.getElementById('lBL');
 
 const outputFilename = document.getElementById('oFN');
 
+const nftFormResetButton = document.getElementById("nRB");
 const nftSendUpperBlockLimit = document.getElementById('nSUBL');
 const nftSendLowerBlockLimit = document.getElementById('nSLBL');
 const nftGasScaling = document.getElementById('nGS');
@@ -160,6 +161,7 @@ if (cookieValue) {
     nftCustomAddresses.value = cookieValue;
 }
 
+const erc20FormResetButton = document.getElementById("eRB");
 const erc20SendUpperBlockLimit = document.getElementById('eSUBL');
 const erc20SendLowerBlockLimit = document.getElementById('eSLBL');
 const erc20GasScaling = document.getElementById('eGS');
@@ -220,6 +222,25 @@ erc20SPKToggleButton.addEventListener('click', () => {
         erc20SPKToggleButton.innerText = "Show";
     }
     erc20SenderPrivateKey.setAttribute("type", erc20ToggleType);
+});
+nftFormResetButton.addEventListener('click', () => {
+    nftSendUpperBlockLimit.value = "";
+    nftSendLowerBlockLimit.value = "";
+    nftGasScaling.value = "40";
+    nftSenderWalletAddress.value = "";
+    nftSenderPrivateKey.value = "";
+    nftContractAddress.value = "";
+    nftTokenIdList.value = "";
+    nftCustomAddresses.value = "";
+});
+erc20FormResetButton.addEventListener('click', () => {
+    erc20SendUpperBlockLimit.value = "";
+    erc20SendLowerBlockLimit.value = "";
+    erc20GasScaling.value = "40";
+    erc20SenderWalletAddress.value = "";
+    erc20SenderPrivateKey.value = "";
+    erc20ContractAddress.value = "";
+    erc20CustomAddresses.value = "";
 });
 
 const buildCustomAddressesList = (sendData, customAddressList) => {
