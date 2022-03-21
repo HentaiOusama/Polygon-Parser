@@ -408,7 +408,7 @@ const runSendNFTFunction = async (initParams) => {
 
     let sendFunctionParamCount = initParams["sendFunctionParamCount"];
 
-    let hasMoreTokenIdsToSend = true;
+    let hasMoreTokenIdsToSend = true, transactionCount = 0;
     let recipientAddresses = [], tokenIdList = [];
     while (true) {
         if (hasMoreTokenIdsToSend) {
@@ -432,6 +432,9 @@ const runSendNFTFunction = async (initParams) => {
                     console.log("Starting Address: " + recipientAddresses[0] +
                         ", Ending Address: " + recipientAddresses[recipientAddresses.length - 1] +
                         ", Batch Size: " + recipientAddresses.length);
+                    console.log("Batch No.: " + (transactionCount + 1) + ", Addresses " +
+                        ((transactionCount * maxAddressPerNFTSend) + 1) + "-" + ((transactionCount + 1) * maxAddressPerNFTSend));
+                    transactionCount += 1;
                 }
             } else if (recipientAddresses.length === 0) {
                 break;
@@ -522,7 +525,7 @@ const runSendERC20Function = async (initParams) => {
         console.log("Fetching data from database.");
     }
 
-    let recipientAddresses = [];
+    let recipientAddresses = [], transactionCount = 0;
     while (true) {
         if (await documentWithUnsentERC20.hasNext()) {
             if (recipientAddresses.length < maxAddressPerERC20Send) {
@@ -538,6 +541,9 @@ const runSendERC20Function = async (initParams) => {
                 console.log("Starting Address: " + recipientAddresses[0] +
                     ", Ending Address: " + recipientAddresses[recipientAddresses.length - 1] +
                     ", Batch Size: " + recipientAddresses.length);
+                console.log("Batch No.: " + (transactionCount + 1) + ", Addresses " +
+                    ((transactionCount * maxAddressPerERC20Send) + 1) + "-" + ((transactionCount + 1) * maxAddressPerERC20Send));
+                transactionCount += 1;
             }
         } else if (recipientAddresses.length === 0) {
             console.log("Operation Complete.");
