@@ -176,8 +176,7 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
         from_block,
         to_block
     };
-    let effectiveAddress = "", operationType,
-        previousData = {"operationType": "", "transactionHash": "", "blockNumber": ""};
+    let operationType, previousData = {"blockNumber": ""};
 
     do {
         if (cursor) {
@@ -203,22 +202,20 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
 
         let startTime = Date.now();
         for (let transfer of result) {
-            let shouldSave = true;
+            let effectiveAddresses = [];
             if (transfer["from_address"] === zeroAddress) {
+                effectiveAddresses.push(transfer["to_address"]);
                 operationType = "Mint";
-                shouldSave = false;
             } else if (transfer["to_address"] === zeroAddress) {
-                effectiveAddress = transfer["from_address"];
+                effectiveAddresses.push(transfer["from_address"]);
                 operationType = "Burn"
             } else {
-                effectiveAddress = transfer["from_address"]
+                effectiveAddresses.push(transfer["to_address"]);
+                effectiveAddresses.push(transfer["from_address"]);
                 operationType = "Transfer"
             }
 
-            previousData["operationType"] = operationType;
-            previousData["transactionHash"] = transfer["transaction_hash"];
-
-            if (shouldSave) {
+            for (let effectiveAddress of effectiveAddresses) {
                 if (Web3.utils.isAddress(effectiveAddress)) {
                     effectiveAddress = Web3.utils.toChecksumAddress(effectiveAddress);
                     if (foundContracts[effectiveAddress] == null) {
@@ -243,11 +240,11 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
                         }
                     }
                 } else {
+                    console.log("Invalid Address Detected for operation: " + operationType);
                     console.log(transfer);
                 }
+                previousData["blockNumber"] = transfer["block_number"];
             }
-
-            previousData["blockNumber"] = transfer["block_number"];
             lastCheckedBlock = previousData["blockNumber"];
 
             if (testMode) {
