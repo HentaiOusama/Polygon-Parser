@@ -50,7 +50,7 @@ const outputFolder = __dirname + "/public";
 // Shutdown Handler
 const shutdownHandler = (event) => {
     logger.info(`Script Exit command ${event} received. Gracefully closing pending tasks. Please wait...`);
-    mongoClient.close().then(() => {
+    Promise.allSettled([updateDatabase(), mongoClient.close()]).then(() => {
         console.log("Script successfully exited...");
         process.exit();
     }).catch(() => {
