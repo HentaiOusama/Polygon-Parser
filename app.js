@@ -190,8 +190,9 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
         cursor = nftTransfers["cursor"];
         let result = nftTransfers["result"];
 
-        let resultCount = result.length;
-        if ((nftTransfers["page_size"] * (nftTransfers["page"] + 1)) >= nftTransfers["total"]) {
+        let resultCount = result.length, totalAddresses = 0, validAddresses = 0;
+        // console.log("Result Count: " + resultCount);
+        if ((nftTransfers["total"] === 0) || (nftTransfers["page_size"] * nftTransfers["page"]) >= nftTransfers["total"]) {
             break;
         } else {
             console.log(`Received Response from Moralis in ${Date.now() - callStartTime} ms containing ${resultCount} transfers`);
@@ -216,6 +217,7 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
             }
 
             for (let effectiveAddress of effectiveAddresses) {
+                totalAddresses += 1;
                 if (Web3.utils.isAddress(effectiveAddress)) {
                     effectiveAddress = Web3.utils.toChecksumAddress(effectiveAddress);
                     if (foundContracts[effectiveAddress] == null) {
@@ -232,11 +234,13 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
                                     "foundCount": 1,
                                     "latestBlockNumber": parseInt(transfer["block_number"])
                                 };
+                                validAddresses++;
                             } else {
                                 foundContracts[effectiveAddress] = true;
                             }
                         } else {
                             collectedData[effectiveAddress]["foundCount"] += 1;
+                            validAddresses++;
                         }
                     }
                 } else {
@@ -245,12 +249,15 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
                 }
                 previousData["blockNumber"] = transfer["block_number"];
             }
+            previousData["blockNumber"] = transfer["block_number"];
             lastCheckedBlock = previousData["blockNumber"];
 
             if (testMode) {
                 break;
             }
         }
+
+        // console.log("Total Addresses: " + totalAddresses + ", Valid Addresses: " + validAddresses);
         console.log(`Processed all transfers in ${Date.now() - startTime} ms`);
         if (testMode) {
             break;
