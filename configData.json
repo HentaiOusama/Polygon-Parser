@@ -1,7 +1,7 @@
 {
   "testMode": false,
-  "moralisServerUrl": "https://ley6sxaeowsj.usemoralis.com:2053/server",
-  "moralisMasterKey": "zkbVq5khThsj8tz4SVabhTQ72FrKYnyurhH1oJS1",
+  "moralisServerUrl": "https://8ynvnrfrepdf.usemoralis.com:2053/server",
+  "moralisMasterKey": "uhgZu0rX8X5i0NEHpbhQNYBASJ7DDHClySLLbh2x",
   "moralisApiKey": "scD0gQRnJbJ8pRrsVblt9fB5aDUHdQ0bLjCqbX75QBhQbNCA2JPIqASuV8ZEpDeI",
   "moralisSpeedyUrl": "https://speedy-nodes-nyc.moralis.io/297790e081b74c8e5b66d952/polygon/mainnet",
   "DBUsername": "Polygon-NFT-Parse",

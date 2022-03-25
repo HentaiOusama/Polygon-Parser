@@ -178,6 +178,7 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
     };
     let operationType, previousData = {"blockNumber": ""};
 
+    let addressValidationErrorCount = 0;
     do {
         if (cursor) {
             options["cursor"] = cursor;
@@ -191,7 +192,6 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
         let result = nftTransfers["result"];
 
         let resultCount = result.length, totalAddresses = 0, validAddresses = 0;
-        // console.log("Result Count: " + resultCount);
         if ((nftTransfers["total"] === 0) || (nftTransfers["page_size"] * nftTransfers["page"]) >= nftTransfers["total"]) {
             break;
         } else {
@@ -225,18 +225,28 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
                             console.log("Found NFT transfers in Block : " + transfer["block_number"]);
                         }
                         if (collectedData[effectiveAddress] == null) {
-                            let code = await web3.eth.getCode(effectiveAddress);
-                            callWeight += 3;
-                            await delay(60);
-                            if (code === "0x") {
-                                collectedData[effectiveAddress] = {
-                                    effectiveAddress,
-                                    "foundCount": 1,
-                                    "latestBlockNumber": parseInt(transfer["block_number"])
-                                };
-                                validAddresses++;
-                            } else {
-                                foundContracts[effectiveAddress] = true;
+                            try {
+                                let code = await web3.eth.getCode(effectiveAddress);
+                                callWeight += 3;
+                                await delay(60);
+                                if (code === "0x") {
+                                    collectedData[effectiveAddress] = {
+                                        effectiveAddress,
+                                        "foundCount": 1,
+                                        "latestBlockNumber": parseInt(transfer["block_number"])
+                                    };
+                                    validAddresses++;
+                                } else {
+                                    foundContracts[effectiveAddress] = true;
+                                }
+                                addressValidationErrorCount = 0;
+                            } catch (err) {
+                                addressValidationErrorCount += 1;
+                                if (addressValidationErrorCount === 3) {
+                                    console.log("Encountered 3 consecutive error during address validation check.");
+                                    console.log("Last error caused by address: " + effectiveAddress);
+                                    throw "Address Validation 3 Consecutive Errors";
+                                }
                             }
                         } else {
                             collectedData[effectiveAddress]["foundCount"] += 1;
@@ -286,7 +296,11 @@ const runFetchDataFunction = async (startBlock, endBlock, chain = "polygon") => 
         /* The results returned by moralis are from higher block number to smaller block number */
         try {
             await fetchDataFromMoralis(currentEndBlock, currentStartBlock, chain);
-            await updateDatabase();
+            try {
+                await updateDatabase();
+            } catch (err) {
+                console.log("Database Update error. Reattempt will be performed in next iteration.");
+            }
             consecutiveErrors = 0;
         } catch (err) {
             console.log("Error Response from Moralis. Waiting 30 seconds before continuing.");
