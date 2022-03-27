@@ -267,7 +267,7 @@ const fetchDataFromMoralis = async (from_block, to_block, chain) => {
             }
         }
 
-        // console.log("Total Addresses: " + totalAddresses + ", Valid Addresses: " + validAddresses);
+        console.log("Total Addresses: " + totalAddresses + ", Valid Addresses: " + validAddresses);
         console.log(`Processed all transfers in ${Date.now() - startTime} ms`);
         if (testMode) {
             break;
@@ -378,7 +378,7 @@ const sendTransactionToBlockchain = async (baseTransaction, senderPK, smartContr
         consecutiveFailure = 0;
         throw "Encountered at least " + errorTolerance + " consecutive send transaction failures. Terminating the operation";
     }
-    await delay(7000);
+    await delay(10000);
     return returnResult;
 };
 

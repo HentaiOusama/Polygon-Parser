@@ -13,7 +13,7 @@
     "5": "disperseNFTs_1155_2"
   },
   "sendNFTGasLimit": 10000000,
-  "maxAddressPerNFTSend": 100,
+  "maxAddressPerNFTSend": 225,
   "sendNFTContractAddress": "0x3D08da4a9C0Ef831f15f4A4212CF57ABD3689691",
   "sendNFTContractABI": [
     {
@@ -253,7 +253,7 @@
   ],
   "sendERC20FunctionName": "disperseTokenSimple",
   "sendERC20GasLimit": 10000000,
-  "maxAddressPerERC20Send": 150,
+  "maxAddressPerERC20Send": 300,
   "sendERC20ContractAddress": "0x1b5e3e7B265E8Fa8Ee8c41ED07B046f0318E8412",
   "sendERC20ContractABI": [
     {
