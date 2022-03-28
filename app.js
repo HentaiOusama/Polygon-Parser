@@ -40,6 +40,9 @@ const Web3 = require("web3");
 const testMode = configData["testMode"];
 let portNumber = process.env["PORT"];
 if (!portNumber) {
+    portNumber = process.argv[2];
+}
+if (!portNumber) {
     portNumber = 6971;
 }
 
@@ -78,7 +81,7 @@ app.get('/node_modules/*.*', (req, res) => {
     }
 });
 // ---- SERVE STATIC FILES ---- //
-app.get('*.*', express.static(outputFolder, {maxAge: 60 * 1000}));
+app.get('*.*', express.static(outputFolder, {maxAge: 30 * 1000}));
 // ---- SERVE APPLICATION PATHS ---- //
 app.all('*', function (req, res) {
     res.status(200).sendFile(`/`, {root: outputFolder});

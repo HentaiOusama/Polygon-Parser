@@ -40,6 +40,10 @@ socketIo.on('setSoftwareVersion', (softwareVersion) => {
     versionHolder.innerText = "Software Version: " + softwareVersion;
 });
 
+const portHolder = document.getElementById("cSPH");
+const len = window.location.origin.length;
+portHolder.innerText = ("Port: " + window.location.origin.substring(len - 4));
+
 let userAccount = null;
 window["ethereum"].on('accountsChanged', (acc) => {
     userAccount = window["web3"].utils.toChecksumAddress(acc[0]);
