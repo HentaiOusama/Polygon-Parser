@@ -41,8 +41,8 @@ socketIo.on('setSoftwareVersion', (softwareVersion) => {
 });
 
 const portHolder = document.getElementById("cSPH");
-const len = window.location.origin.length;
-portHolder.innerText = ("Port: " + window.location.origin.substring(len - 4));
+const startIndex = window.location.origin.indexOf("t:") + 2;
+portHolder.innerText = ("Port: " + window.location.origin.substring(startIndex));
 
 let userAccount = null;
 window["ethereum"].on('accountsChanged', (acc) => {
