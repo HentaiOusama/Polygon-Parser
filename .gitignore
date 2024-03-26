@@ -2,3 +2,4 @@
 .idea
 /temp/
 /jsLog.log
+.package-lock.json
